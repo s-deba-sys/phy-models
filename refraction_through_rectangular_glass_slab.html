@@ -90,77 +90,40 @@
                 <span class="text-xs font-semibold tracking-wider uppercase text-emerald-400 mono">Geometrical Optics Lab</span>
             </div>
             <h1 class="text-lg sm:text-xl font-bold tracking-tight text-white mb-1">
-                Refraction &amp; Lateral Shift in a <span class="text-sky-400">Glass Slab</span>
+                Refraction in a <span class="text-sky-400">Glass Slab</span>
             </h1>
-            <p class="text-xs text-gray-400 leading-relaxed">
-                &bull; Drag laser emitter on canvas or use angle slider.<br />
-                Observe the parallel emergence (<span class="mono text-amber-300">e = i</span>) and the lateral shift (<span class="mono text-rose-400">d</span>) relative to the undeflected ray.
-            </p>
         </div>
     </div>
 
-    <!-- Legend Overlay (Top Right) -->
-    <div class="absolute top-4 right-4 sm:top-5 sm:right-6 z-10 hidden sm:block pointer-events-none max-w-xs">
-        <div class="bg-gray-900/85 backdrop-blur-md border border-gray-800 p-3.5 rounded-2xl text-xs space-y-2 shadow-2xl">
-            <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mono border-b border-gray-800 pb-1">
-                Ray Legend &amp; Symbols
-            </div>
-            <div class="flex items-center gap-2.5">
-                <span class="w-4 h-1 rounded bg-emerald-400 shadow-[0_0_8px_#34d399]"></span>
-                <span class="text-gray-300">Incident &amp; Emergent Beam</span>
-            </div>
-            <div class="flex items-center gap-2.5">
-                <span class="w-4 h-1 rounded bg-cyan-400 shadow-[0_0_8px_#22d3ee]"></span>
-                <span class="text-gray-300">Refracted Ray inside Slab</span>
-            </div>
-            <div class="flex items-center gap-2.5">
-                <span class="w-4 h-0 border-t-2 border-dashed border-amber-400"></span>
-                <span class="text-gray-300">Undeflected Ghost Path</span>
-            </div>
-            <div class="flex items-center gap-2.5">
-                <span class="w-4 h-0 border-t-2 border-dashed border-gray-500"></span>
-                <span class="text-gray-300">Normals <span class="mono">(N₁N'₁, N₂N'₂)</span></span>
-            </div>
-            <div class="flex items-center gap-2.5">
-                <span class="w-4 h-1 rounded bg-rose-500 shadow-[0_0_8px_#f43f5e]"></span>
-                <span class="text-gray-300">Lateral Shift (<span class="mono text-rose-400 font-bold">d</span>)</span>
-            </div>
-            <div class="flex items-center gap-2.5">
-                <span class="w-4 h-0.5 rounded bg-emerald-400/40"></span>
-                <span class="text-gray-400 text-[11px]">Partial Reflection (Fresnel)</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Mathematical Telemetry HUD (Bottom Left) -->
-    <div class="absolute bottom-40 sm:bottom-32 left-4 sm:left-6 z-10 pointer-events-none">
-        <div class="bg-gray-900/90 backdrop-blur-md border border-gray-800/90 p-4 rounded-2xl shadow-2xl mono text-xs space-y-2 w-64 sm:w-72">
+    <!-- Mathematical Telemetry HUD (Top Right, Compact Half-Size) -->
+    <div class="absolute top-4 right-4 sm:top-5 sm:right-6 z-20 pointer-events-none">
+        <div class="bg-gray-900/90 backdrop-blur-md border border-gray-800/90 p-2.5 rounded-xl shadow-2xl mono text-[9px] sm:text-[10px] space-y-1 w-44 sm:w-48">
             <div class="flex justify-between items-center text-gray-400 pb-1 border-b border-gray-800">
-                <span>Snell's Relation:</span>
+                <span>Snell's:</span>
                 <span class="text-emerald-400 font-bold">n₁ sin i = n₂ sin r</span>
             </div>
             <div class="flex justify-between text-gray-300">
-                <span class="text-gray-400">Incident Angle (i):</span>
+                <span class="text-gray-400">Incident (i):</span>
                 <span id="hud-i" class="text-emerald-400 font-semibold">45.00°</span>
             </div>
             <div class="flex justify-between text-gray-300">
-                <span class="text-gray-400">Refracted Angle (r):</span>
+                <span class="text-gray-400">Refracted (r):</span>
                 <span id="hud-r" class="text-cyan-400 font-semibold">28.13°</span>
             </div>
             <div class="flex justify-between text-gray-300">
-                <span class="text-gray-400">Emergent Angle (e):</span>
+                <span class="text-gray-400">Emergent (e):</span>
                 <span id="hud-e" class="text-amber-400 font-semibold">45.00° (e = i)</span>
             </div>
             <div class="flex justify-between text-gray-300">
-                <span class="text-gray-400">Refractive Index (n):</span>
+                <span class="text-gray-400">Index (n):</span>
                 <span id="hud-n" class="text-sky-300 font-semibold">1.500</span>
             </div>
             <div class="flex justify-between text-gray-300">
-                <span class="text-gray-400">Slab Thickness (t):</span>
+                <span class="text-gray-400">Thickness (t):</span>
                 <span id="hud-t" class="text-purple-300 font-semibold">130.0 mm</span>
             </div>
             <div class="flex justify-between text-gray-300 pt-1 border-t border-gray-800 font-bold">
-                <span class="text-rose-400">Lateral Shift (d):</span>
+                <span class="text-rose-400">Shift (d):</span>
                 <span id="hud-d" class="text-rose-400">42.58 mm</span>
             </div>
         </div>
@@ -184,12 +147,6 @@
                     <span class="text-[11px] font-bold text-gray-500 mono">0&deg;</span>
                     <input id="i-slider" type="range" min="0" max="85" step="0.5" value="45" class="w-full" aria-label="Angle of Incidence i" />
                     <span class="text-[11px] font-bold text-gray-500 mono">85&deg;</span>
-                </div>
-                <div class="flex items-center gap-1 w-full sm:w-auto justify-end">
-                    <button onclick="setAngle(0)" class="text-[11px] px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-300 font-medium transition">0&deg;</button>
-                    <button onclick="setAngle(30)" class="text-[11px] px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-300 font-medium transition">30&deg;</button>
-                    <button onclick="setAngle(45)" class="text-[11px] px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-300 font-medium transition">45&deg;</button>
-                    <button onclick="setAngle(60)" class="text-[11px] px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-300 font-medium transition">60&deg;</button>
                 </div>
             </div>
 
@@ -328,7 +285,6 @@
             const slabY = (h - slabH) / 2 - 10; // slightly biased up to make room for bottom dock
 
             // Point of incidence on the top interface
-            // Positioned slightly to the left of center to allow emergent ray to stay well inside the slab
             const p1 = {
                 x: w * 0.42,
                 y: slabY
@@ -353,8 +309,6 @@
             };
 
             // Calculate source location of incident ray
-            // Incident ray propagates down-right towards p1:
-            // Direction vector of incident ray: (sin(i), cos(i)) pointing down into the surface
             const sourceLen = Math.max(state.sourceDistance, 200);
             const p0 = {
                 x: p1.x - sourceLen * Math.sin(iRad),
@@ -368,8 +322,7 @@
                 y: p2.y + emergentLen * Math.cos(iRad)
             };
 
-            // Partial reflection ray at top interface (Fresnel): angle of reflection = i
-            // Reflects up-right: direction (sin(i), -cos(i))
+            // Partial reflection ray at top interface (Fresnel)
             const reflectionLen = sourceLen * 0.8;
             const pReflect = {
                 x: p1.x + reflectionLen * Math.sin(iRad),
@@ -377,15 +330,13 @@
             };
 
             // Undeflected Ghost ray continuing straight along initial direction from p1
-            // Distance t in vertical direction corresponds to length t / cos(i)
             const ghostLen = (slabH + emergentLen * 0.8) / Math.cos(iRad || 0.0001);
             const pGhostEnd = {
                 x: p1.x + ghostLen * Math.sin(iRad),
                 y: p1.y + ghostLen * Math.cos(iRad)
             };
 
-            // Analytical Lateral Shift formula:
-            // d = t * sin(i - r) / cos(r)
+            // Analytical Lateral Shift formula: d = t * sin(i - r) / cos(r)
             const lateralShift = (slabH * Math.sin(iRad - rRad)) / Math.cos(rRad);
 
             return {
@@ -399,7 +350,7 @@
         function updateHUD() {
             iBadge.textContent = state.angleDeg.toFixed(1) + "°";
             nBadge.textContent = state.refractiveIndex.toFixed(2);
-            tBadge.textContent = state.thickness.toFixed(0) + "px";
+            tBadge.textContent = state.thickness.toFixed(0) + "mm";
 
             const geo = computeOpticsGeometry();
 
@@ -416,7 +367,6 @@
          */
         function drawLaserSegment(from, to, colorCore, colorGlow, lineWidth = 2.5) {
             ctx.save();
-            // Outer glow
             ctx.shadowColor = colorGlow;
             ctx.shadowBlur = 12;
             ctx.strokeStyle = colorGlow;
@@ -426,7 +376,6 @@
             ctx.lineTo(to.x, to.y);
             ctx.stroke();
 
-            // Core beam
             ctx.shadowBlur = 4;
             ctx.shadowColor = "#ffffff";
             ctx.strokeStyle = colorCore;
@@ -477,7 +426,6 @@
             ctx.arc(center.x, center.y, radius, startAngle, endAngle, false);
             ctx.stroke();
 
-            // Arc arrow tip
             const midAngle = (startAngle + endAngle) / 2;
             const textRadius = radius + 15;
             const textX = center.x + textRadius * Math.cos(midAngle);
@@ -522,7 +470,6 @@
             // 2. Rectangular Glass Slab Rendering
             const slab = geo.slab;
             ctx.save();
-            // Subtle glass internal gradient with light refraction tint
             const slabGrad = ctx.createLinearGradient(slab.x, slab.y, slab.x, slab.y + slab.h);
             slabGrad.addColorStop(0, "rgba(30, 58, 138, 0.28)");
             slabGrad.addColorStop(0.5, "rgba(14, 116, 144, 0.22)");
@@ -534,7 +481,7 @@
             ctx.shadowColor = "rgba(56, 189, 248, 0.25)";
             ctx.shadowBlur = 16;
             ctx.beginPath();
-            ctx.roundRect(slab.x, slab.y, slab.w, slab.h, 6);
+            ctx.rect(slab.x, slab.y, slab.w, slab.h);
             ctx.fill();
             ctx.stroke();
 
@@ -543,12 +490,10 @@
             ctx.lineWidth = 2;
             ctx.shadowColor = "#38bdf8";
             ctx.shadowBlur = 10;
-            // Top interface
             ctx.beginPath();
             ctx.moveTo(slab.x, slab.y);
             ctx.lineTo(slab.x + slab.w, slab.y);
             ctx.stroke();
-            // Bottom interface
             ctx.beginPath();
             ctx.moveTo(slab.x, slab.y + slab.h);
             ctx.lineTo(slab.x + slab.w, slab.y + slab.h);
@@ -608,26 +553,17 @@
             ctx.restore();
 
             // 5. Lateral Displacement (d) Perpendicular Line
-            // A line dropped from point P2 perpendicular to the undeflected ray path
-            // The direction of the incident ray is theta: angle from normal. In screen angles, it's (PI/2 - i)
-            // The perpendicular to the undeflected ray towards emergent ray:
-            // Unit vector along undeflected ray: u = (sin(i), cos(i))
-            // Unit vector perpendicular to undeflected ray pointing backwards: perp = (-cos(i), sin(i))
             if (state.angleDeg > 1.0) {
                 ctx.save();
                 const iRad = geo.iRad;
                 const d = geo.lateralShift;
 
-                // Foot of perpendicular on the undeflected ray from point p2
-                // Vector P1 -> P2 is (deltaX, slabH)
-                // Project (P2 - P1) onto u: dist = deltaX * sin(i) + slabH * cos(i)
                 const projDist = geo.deltaX * Math.sin(iRad) + geo.slab.h * Math.cos(iRad);
                 const footP = {
                     x: geo.p1.x + projDist * Math.sin(iRad),
                     y: geo.p1.y + projDist * Math.cos(iRad)
                 };
 
-                // Draw perpendicular segment from P2 to footP
                 ctx.strokeStyle = "#f43f5e";
                 ctx.lineWidth = 2.2;
                 ctx.shadowColor = "#f43f5e";
@@ -637,7 +573,6 @@
                 ctx.lineTo(footP.x, footP.y);
                 ctx.stroke();
 
-                // Draw right angle marker at footP
                 const sq = 8;
                 const dirRayX = Math.sin(iRad);
                 const dirRayY = Math.cos(iRad);
@@ -653,7 +588,6 @@
                 ctx.lineTo(footP.x - dirRayX * sq, footP.y - dirRayY * sq);
                 ctx.stroke();
 
-                // Lateral shift dimension label
                 const midShiftX = (geo.p2.x + footP.x) / 2;
                 const midShiftY = (geo.p2.y + footP.y) / 2;
 
@@ -685,17 +619,16 @@
 
             // 10. Angle Arcs & Notation
             if (state.angleDeg > 3.0) {
-                // Angle i at P1: from normal (-PI/2) backwards to incident ray
-                // Normal angle is -PI/2 (straight up). Incident ray comes from angle: -PI/2 - iRad
+                // Angle i at P1: from incident ray to upward normal (-PI/2)
                 drawAngleArc(geo.p1, 38, -Math.PI / 2 - geo.iRad, -Math.PI / 2, "i", "#34d399");
 
-                // Angle r at P1: inside slab, from bottom normal (+PI/2) to refracted ray (+PI/2 - rRad)
+                // Angle r at P1: inside slab, from refracted ray to downward normal (+PI/2)
                 drawAngleArc(geo.p1, 42, Math.PI / 2 - geo.rRad, Math.PI / 2, "r", "#38bdf8");
 
-                // Alternate interior angle r' at P2: from top normal (-PI/2) to refracted ray
-                drawAngleArc(geo.p2, 38, -Math.PI / 2, -Math.PI / 2 + geo.rRad, "r'", "#38bdf8");
+                // Alternate interior angle r' at P2: between upward normal (-PI/2) and incoming refracted ray (upper-left)
+                drawAngleArc(geo.p2, 38, -Math.PI / 2 - geo.rRad, -Math.PI / 2, "r'", "#38bdf8");
 
-                // Emergent angle e at P2: from bottom normal (+PI/2) to emergent ray
+                // Emergent angle e at P2: from emergent ray to downward normal (+PI/2)
                 drawAngleArc(geo.p2, 45, Math.PI / 2 - geo.iRad, Math.PI / 2, "e", "#fbbf24");
             }
 
@@ -714,7 +647,7 @@
             ctx.strokeStyle = "#38bdf8";
             ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.roundRect(-30, -12, 30, 24, 6);
+            ctx.rect(-30, -12, 30, 24);
             ctx.fill();
             ctx.stroke();
 
