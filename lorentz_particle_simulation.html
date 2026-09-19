@@ -1,544 +1,458 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Charged Particle in a Magnetic Field - 3D Lorentz Simulation</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Three.js for 3D graphics -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <!-- OrbitControls for interactive POV manipulation -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
-    
-    * {
-      box-sizing: border-box;
-      user-select: none;
-    }
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      overflow: hidden;
-      background-color: #030712;
-      color: #f3f4f6;
-    }
-    .mono {
-      font-family: 'JetBrains Mono', monospace;
-    }
-    /* Custom Slider Accent Styling */
-    input[type=range] {
-      -webkit-appearance: none;
-      appearance: none;
-      background: transparent;
-    }
-    input[type=range]:focus {
-      outline: none;
-    }
-    input[type=range]::-webkit-slider-runnable-track {
-      width: 100%;
-      height: 8px;
-      cursor: pointer;
-      background: #1f2937;
-      border-radius: 9999px;
-      border: 1px solid #374151;
-    }
-    input[type=range]::-webkit-slider-thumb {
-      height: 22px;
-      width: 22px;
-      border-radius: 50%;
-      background: #38bdf8;
-      cursor: pointer;
-      -webkit-appearance: none;
-      margin-top: -7px;
-      box-shadow: 0 0 12px rgba(56, 189, 248, 0.7), 0 0 0 2px #0f172a;
-      transition: transform 0.15s ease, background-color 0.15s ease;
-    }
-    input[type=range]::-webkit-slider-thumb:hover {
-      transform: scale(1.15);
-      background: #7dd3fc;
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Charged Particle in a Magnetic Field - 3D Lorentz Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js for 3D graphics -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls for interactive POV manipulation -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow: hidden;
+            background-color: #030712;
+            color: #f3f4f6;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Custom Slider Accent Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+        }
+
+        input[type=range]:focus {
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 8px;
+            cursor: pointer;
+            background: #1f2937;
+            border-radius: 9999px;
+            border: 1px solid #374151;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            height: 22px;
+            width: 22px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -7px;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.7), 0 0 0 2px #0f172a;
+            transition: transform 0.15s ease, background-color 0.15s ease;
+        }
+
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            background: #7dd3fc;
+        }
+    </style>
 </head>
+
 <body class="relative w-screen h-screen m-0 p-0">
 
-  <!-- WebGL 3D Container -->
-  <div id="canvas-container" class="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"></div>
+    <!-- WebGL 3D Container -->
+    <div id="canvas-container" class="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"></div>
 
-  <!-- Header and Title Overlay -->
-  <div class="absolute top-4 left-4 sm:top-6 sm:left-6 z-10 pointer-events-none max-w-sm sm:max-w-md">
-    <div class="bg-gray-900/80 backdrop-blur-md border border-gray-800 p-4 rounded-2xl shadow-2xl">
-      <div class="flex items-center gap-2 mb-1">
-        <span class="inline-block w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
-        <span class="text-xs font-semibold tracking-wider uppercase text-cyan-400 mono">Lorentz Force Dynamics</span>
-      </div>
-      <h1 class="text-lg sm:text-xl font-bold tracking-tight text-white mb-1">
-        Charged Particle in Uniform <span class="text-sky-400">B&#8407;</span> Field
-      </h1>
-      <p class="text-xs text-gray-400 leading-relaxed">
-        &bull; Drag with mouse/touch to orbit camera &bull; Scroll/pinch to zoom.<br/>
-        Notice how the <span class="text-amber-400 font-semibold">gold dashed ghost line</span> represents the undeflected trajectory along <span class="mono">v&#8407;&#8320;</span>.
-      </p>
+    <!-- Header and Title Overlay -->
+    <div class="absolute top-4 left-4 sm:top-6 sm:left-6 z-10 pointer-events-none max-w-sm sm:max-w-md">
+        <div class="bg-gray-900/80 backdrop-blur-md border border-gray-800 p-4 rounded-2xl shadow-2xl">
+            <div class="flex items-center gap-2 mb-1">
+                <span class="inline-block w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                <span class="text-xs font-semibold tracking-wider uppercase text-cyan-400 mono">Lorentz Force Dynamics</span>
+            </div>
+            <h1 class="text-lg sm:text-xl font-bold tracking-tight text-white mb-1">
+                Charged Particle in Uniform <span class="text-sky-400">B&#8407;</span> Field
+            </h1>
+           
+        </div>
     </div>
-  </div>
 
-  <!-- Legend Overlay (Top Right) -->
-  <div class="absolute top-4 right-4 sm:top-6 sm:right-6 z-10 hidden md:block pointer-events-none">
-    <div class="bg-gray-900/80 backdrop-blur-md border border-gray-800 p-3.5 rounded-2xl text-xs space-y-2.5 shadow-2xl">
-      <div class="flex items-center gap-2.5">
-        <span class="w-4 h-1 rounded bg-rose-500 shadow-[0_0_8px_#f43f5e]"></span>
-        <span class="text-gray-300">Actual Trajectory (<span class="mono">q &gt; 0</span>)</span>
-      </div>
-      <div class="flex items-center gap-2.5">
-        <span class="w-4 h-0 border-t-2 border-dashed border-amber-400"></span>
-        <span class="text-gray-300">Ghost Path (Undeflected <span class="mono">v&#8407;&#8320;</span>)</span>
-      </div>
-      <div class="flex items-center gap-2.5">
-        <span class="w-4 h-1 rounded bg-sky-500 shadow-[0_0_8px_#38bdf8]"></span>
-        <span class="text-gray-300">Magnetic Field Vectors (<span class="mono">+Z axis</span>)</span>
-      </div>
+    <!-- Legend Overlay (Top Right) -->
+    <div class="absolute top-4 right-4 sm:top-6 sm:right-6 z-10 hidden md:block pointer-events-none">
+        <div class="bg-gray-900/80 backdrop-blur-md border border-gray-800 p-3.5 rounded-2xl text-xs space-y-2.5 shadow-2xl">
+            <div class="flex items-center gap-2.5">
+                <span class="w-4 h-1 rounded bg-rose-500 shadow-[0_0_8px_#f43f5e]"></span>
+                <span class="text-gray-300">Actual Trajectory (<span class="mono">q &gt; 0</span>)</span>
+            </div>
+            <div class="flex items-center gap-2.5">
+                <span class="w-4 h-0 border-t-2 border-dashed border-amber-400"></span>
+                <span class="text-gray-300">Ghost Path (Undeflected <span class="mono">v&#8407;&#8320;</span>)</span>
+            </div>
+            <div class="flex items-center gap-2.5">
+                <span class="w-4 h-1 rounded bg-sky-500 shadow-[0_0_8px_#38bdf8]"></span>
+                <span class="text-gray-300">Magnetic Field Vectors (<span class="mono">+Z axis</span>)</span>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <!-- Real-time Mathematical HUD (Bottom Left) -->
-  <div class="absolute bottom-32 left-4 sm:left-6 z-10 pointer-events-none">
-    <div class="bg-gray-900/85 backdrop-blur-md border border-gray-800/90 p-4 rounded-2xl shadow-2xl mono text-xs space-y-1.5 w-64 sm:w-72">
-      <div class="flex justify-between items-center text-gray-400 pb-1 border-b border-gray-800">
-        <span>Kinematic Regime:</span>
-        <span id="hud-regime" class="font-bold text-cyan-400">Helix</span>
-      </div>
-      <div class="flex justify-between text-gray-300 pt-0.5">
-        <span class="text-gray-400">v&#8869; (v &middot; sin &theta;):</span>
-        <span id="hud-vperp" class="text-rose-400 font-semibold">0.71 v</span>
-      </div>
-      <div class="flex justify-between text-gray-300">
-        <span class="text-gray-400">v&#8741; (v &middot; cos &theta;):</span>
-        <span id="hud-vpar" class="text-sky-400 font-semibold">0.71 v</span>
-      </div>
-      <div class="flex justify-between text-gray-300">
-        <span class="text-gray-400">Gyroradius (r):</span>
-        <span id="hud-radius" class="text-purple-400 font-semibold">7.07 m</span>
-      </div>
-      <div class="flex justify-between text-gray-300">
-        <span class="text-gray-400">Helical Pitch (p):</span>
-        <span id="hud-pitch" class="text-amber-400 font-semibold">17.77 m</span>
-      </div>
+    <!-- Primary Slider Controller (Bottom Floating Panel) -->
+    <div class="absolute bottom-5 inset-x-4 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-20 max-w-xl sm:w-full">
+        <div class="bg-gray-900/90 backdrop-blur-xl border border-gray-700/80 p-5 rounded-3xl shadow-2xl flex flex-col sm:flex-row items-center gap-4">
+            <div class="flex items-center justify-between w-full sm:w-auto gap-3">
+                <label for="theta-slider" class="text-xs uppercase font-bold tracking-wider text-gray-300 whitespace-nowrap">
+                    Pitch Angle (&theta;)
+                </label>
+                <span id="theta-badge" class="mono text-sm px-3 py-1 bg-cyan-950 text-cyan-300 border border-cyan-700/60 rounded-xl font-bold shadow-inner min-w-[62px] text-center">
+                    45.0&deg;
+                </span>
+            </div>
+
+            <!-- The Single Controlled Variable -->
+            <div class="w-full flex items-center gap-3">
+                <span class="text-xs font-bold text-gray-500 mono">0&deg;</span>
+                <input id="theta-slider" type="range" min="0" max="90" step="0.5" value="45" class="w-full" aria-label="Pitch angle theta between initial velocity and magnetic field" />
+                <span class="text-xs font-bold text-gray-500 mono">90&deg;</span>
+            </div>
+
+            <!-- Quick Preset buttons for the single variable -->
+            <div class="flex items-center gap-1.5 w-full sm:w-auto justify-end border-t sm:border-t-0 sm:border-l border-gray-800 pt-2 sm:pt-0 sm:pl-3">
+                <button onclick="setTheta(0)" class="text-[11px] px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-300 font-medium transition">
+                    0&deg;
+                </button>
+                <button onclick="setTheta(45)" class="text-[11px] px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-300 font-medium transition">
+                    45&deg;
+                </button>
+                <button onclick="setTheta(90)" class="text-[11px] px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-300 font-medium transition">
+                    90&deg;
+                </button>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <!-- Primary Slider Controller (Bottom Floating Panel) -->
-  <div class="absolute bottom-5 inset-x-4 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-20 max-w-xl sm:w-full">
-    <div class="bg-gray-900/90 backdrop-blur-xl border border-gray-700/80 p-5 rounded-3xl shadow-2xl flex flex-col sm:flex-row items-center gap-4">
-      <div class="flex items-center justify-between w-full sm:w-auto gap-3">
-        <label for="theta-slider" class="text-xs uppercase font-bold tracking-wider text-gray-300 whitespace-nowrap">
-          Pitch Angle (&theta;)
-        </label>
-        <span id="theta-badge" class="mono text-sm px-3 py-1 bg-cyan-950 text-cyan-300 border border-cyan-700/60 rounded-xl font-bold shadow-inner min-w-[62px] text-center">
-          45.0&deg;
-        </span>
-      </div>
-      
-      <!-- The Single Controlled Variable -->
-      <div class="w-full flex items-center gap-3">
-        <span class="text-xs font-bold text-gray-500 mono">0&deg;</span>
-        <input 
-          id="theta-slider" 
-          type="range" 
-          min="0" 
-          max="90" 
-          step="0.5" 
-          value="45" 
-          class="w-full"
-          aria-label="Pitch angle theta between initial velocity and magnetic field"
-        />
-        <span class="text-xs font-bold text-gray-500 mono">90&deg;</span>
-      </div>
+    <script>
+        /* Global simulation state */
+        const CONFIG = {
+            vTotal: 25.0, // Total speed |v|
+            omega: 2.5, // Cyclotron frequency: q*B/m
+            ghostLength: 85.0, // Max length of undeflected ghost path
+            trailResolution: 600, // Number of points in trail
+            timeScale: 1.0, // Simulation speed factor
+        };
 
-      <!-- Quick Preset buttons for the single variable -->
-      <div class="flex items-center gap-1.5 w-full sm:w-auto justify-end border-t sm:border-t-0 sm:border-l border-gray-800 pt-2 sm:pt-0 sm:pl-3">
-        <button onclick="setTheta(0)" class="text-[11px] px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-300 font-medium transition">
-          0&deg;
-        </button>
-        <button onclick="setTheta(45)" class="text-[11px] px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-300 font-medium transition">
-          45&deg;
-        </button>
-        <button onclick="setTheta(90)" class="text-[11px] px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-300 font-medium transition">
-          90&deg;
-        </button>
-      </div>
-    </div>
-  </div>
+        let thetaDeg = 45.0; // The ONLY controlled variable
+        let simTime = 0.0;
 
-  <script>
-    /* Global simulation state */
-    const CONFIG = {
-      vTotal: 25.0,        // Total speed |v|
-      omega: 2.5,          // Cyclotron frequency: q*B/m
-      ghostLength: 85.0,   // Max length of undeflected ghost path
-      trailResolution: 600,// Number of points in trail
-      timeScale: 1.0,      // Simulation speed factor
-    };
+        // Three.js Core components
+        const container = document.getElementById("canvas-container");
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x030712, 0.007);
 
-    let thetaDeg = 45.0;   // The ONLY controlled variable
-    let simTime = 0.0;
-    let isOrbiting = false;
+        const camera = new THREE.PerspectiveCamera(
+            45,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            1000
+        );
+        camera.position.set(45, 32, 50);
 
-    // Three.js Core components
-    const container = document.getElementById("canvas-container");
-    const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x030712, 0.007);
+        const renderer = new THREE.WebGLRenderer({
+            antialias: true,
+            alpha: true
+        });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        container.appendChild(renderer.domElement);
 
-    const camera = new THREE.PerspectiveCamera(
-      45,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      1000
-    );
-    // Perspective POV angled to accentuate depth & 3D helical curvature
-    camera.position.set(45, 32, 50);
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxDistance = 250;
+        controls.minDistance = 10;
+        controls.target.set(0, 0, 20);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.shadowMap.enabled = true;
-    container.appendChild(renderer.domElement);
+        // Ambient & Directional Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
 
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.maxDistance = 250;
-    controls.minDistance = 10;
-    controls.target.set(0, 0, 20);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(30, 50, 20);
+        scene.add(dirLight);
 
-    // Ambient & Directional Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    scene.add(ambientLight);
+        const pointLight = new THREE.PointLight(0xf43f5e, 2, 40);
+        scene.add(pointLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    dirLight.position.set(30, 50, 20);
-    scene.add(dirLight);
+        // Reference Grid & Coordinate System
+        const gridHelper = new THREE.GridHelper(90, 30, 0x1f2937, 0x111827);
+        gridHelper.position.set(0, -12, 20);
+        scene.add(gridHelper);
 
-    const pointLight = new THREE.PointLight(0xf43f5e, 2, 40);
-    scene.add(pointLight);
+        // Create 3D arrows depicting uniform B-field pointing along +Z axis
+        const bFieldGroup = new THREE.Group();
+        const arrowDir = new THREE.Vector3(0, 0, 1).normalize();
+        const arrowLength = 9;
+        const arrowColor = 0x0284c7;
 
-    // Reference Grid & Coordinate System
-    // Magnetic field is oriented strictly along +Z axis
-    const gridHelper = new THREE.GridHelper(90, 30, 0x1f2937, 0x111827);
-    gridHelper.position.set(0, -12, 20);
-    scene.add(gridHelper);
-
-    // Create 3D arrows depicting uniform B-field pointing along +Z axis
-    const bFieldGroup = new THREE.Group();
-    const arrowDir = new THREE.Vector3(0, 0, 1).normalize();
-    const arrowLength = 9;
-    const arrowColor = 0x0284c7;
-
-    for (let x = -16; x <= 16; x += 8) {
-      for (let y = -8; y <= 16; y += 8) {
-        for (let z = -15; z <= 55; z += 18) {
-          const arrowOrigin = new THREE.Vector3(x, y, z);
-          const arrowHelper = new THREE.ArrowHelper(
-            arrowDir,
-            arrowOrigin,
-            arrowLength,
-            arrowColor,
-            2.2,
-            1.2
-          );
-          arrowHelper.line.material.transparent = true;
-          arrowHelper.line.material.opacity = 0.22;
-          arrowHelper.cone.material.transparent = true;
-          arrowHelper.cone.material.opacity = 0.4;
-          bFieldGroup.add(arrowHelper);
+        for (let x = -16; x <= 16; x += 8) {
+            for (let y = -8; y <= 16; y += 8) {
+                for (let z = -15; z <= 55; z += 18) {
+                    const arrowOrigin = new THREE.Vector3(x, y, z);
+                    const arrowHelper = new THREE.ArrowHelper(
+                        arrowDir,
+                        arrowOrigin,
+                        arrowLength,
+                        arrowColor,
+                        2.2,
+                        1.2
+                    );
+                    arrowHelper.line.material.transparent = true;
+                    arrowHelper.line.material.opacity = 0.22;
+                    arrowHelper.cone.material.transparent = true;
+                    arrowHelper.cone.material.opacity = 0.4;
+                    bFieldGroup.add(arrowHelper);
+                }
+            }
         }
-      }
-    }
-    scene.add(bFieldGroup);
+        scene.add(bFieldGroup);
 
-    // Origin marker
-    const originGeo = new THREE.SphereGeometry(0.35, 16, 16);
-    const originMat = new THREE.MeshBasicMaterial({ color: 0x64748b, wireframe: true });
-    const originMesh = new THREE.Mesh(originGeo, originMat);
-    originMesh.position.set(0, 0, 0);
-    scene.add(originMesh);
+        // Origin marker
+        const originGeo = new THREE.SphereGeometry(0.35, 16, 16);
+        const originMat = new THREE.MeshBasicMaterial({
+            color: 0x64748b,
+            wireframe: true
+        });
+        const originMesh = new THREE.Mesh(originGeo, originMat);
+        originMesh.position.set(0, 0, 0);
+        scene.add(originMesh);
 
-    // 1. Ghost Line for Initial Straight Velocity Path (Undeflected v0)
-    const ghostPointsCount = 80;
-    const ghostGeometry = new THREE.BufferGeometry();
-    const ghostPositions = new Float32Array(ghostPointsCount * 3);
-    ghostGeometry.setAttribute("position", new THREE.BufferAttribute(ghostPositions, 3));
+        // 1. Ghost Line for Initial Straight Velocity Path (Undeflected v0)
+        const ghostPointsCount = 80;
+        const ghostGeometry = new THREE.BufferGeometry();
+        const ghostPositions = new Float32Array(ghostPointsCount * 3);
+        ghostGeometry.setAttribute("position", new THREE.BufferAttribute(ghostPositions, 3));
 
-    const ghostMaterial = new THREE.LineDashedMaterial({
-      color: 0xfbbf24,     // Bright Amber
-      linewidth: 2,
-      scale: 1,
-      dashSize: 1.2,
-      gapSize: 0.8,
-      transparent: true,
-      opacity: 0.85
-    });
-    const ghostLine = new THREE.Line(ghostGeometry, ghostMaterial);
-    ghostLine.computeLineDistances();
-    scene.add(ghostLine);
+        const ghostMaterial = new THREE.LineDashedMaterial({
+            color: 0xfbbf24,
+            linewidth: 2,
+            scale: 1,
+            dashSize: 1.2,
+            gapSize: 0.8,
+            transparent: true,
+            opacity: 0.85
+        });
+        const ghostLine = new THREE.Line(ghostGeometry, ghostMaterial);
+        ghostLine.computeLineDistances();
+        scene.add(ghostLine);
 
-    // Ghost path tip indicator arrow
-    const ghostConeGeo = new THREE.ConeGeometry(0.6, 1.8, 16);
-    const ghostConeMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
-    const ghostCone = new THREE.Mesh(ghostConeGeo, ghostConeMat);
-    scene.add(ghostCone);
+        // Ghost path tip indicator arrow
+        const ghostConeGeo = new THREE.ConeGeometry(0.6, 1.8, 16);
+        const ghostConeMat = new THREE.MeshBasicMaterial({
+            color: 0xfbbf24
+        });
+        const ghostCone = new THREE.Mesh(ghostConeGeo, ghostConeMat);
+        scene.add(ghostCone);
 
-    // 2. Charged Particle (Glowing Sphere)
-    const particleGeometry = new THREE.SphereGeometry(1.0, 32, 32);
-    const particleMaterial = new THREE.MeshStandardMaterial({
-      color: 0xf43f5e,
-      emissive: 0xf43f5e,
-      emissiveIntensity: 0.7,
-      roughness: 0.2,
-      metalness: 0.5
-    });
-    const particleMesh = new THREE.Mesh(particleGeometry, particleMaterial);
-    scene.add(particleMesh);
+        // 2. Charged Particle (Glowing Sphere)
+        const particleGeometry = new THREE.SphereGeometry(1.0, 32, 32);
+        const particleMaterial = new THREE.MeshStandardMaterial({
+            color: 0xf43f5e,
+            emissive: 0xf43f5e,
+            emissiveIntensity: 0.7,
+            roughness: 0.2,
+            metalness: 0.5
+        });
+        const particleMesh = new THREE.Mesh(particleGeometry, particleMaterial);
+        scene.add(particleMesh);
 
-    // Particle Outer Glow Shell
-    const glowGeo = new THREE.SphereGeometry(1.6, 24, 24);
-    const glowMat = new THREE.MeshBasicMaterial({
-      color: 0xfb7185,
-      transparent: true,
-      opacity: 0.25,
-      wireframe: true
-    });
-    const glowMesh = new THREE.Mesh(glowGeo, glowMat);
-    particleMesh.add(glowMesh);
+        // Particle Outer Glow Shell
+        const glowGeo = new THREE.SphereGeometry(1.6, 24, 24);
+        const glowMat = new THREE.MeshBasicMaterial({
+            color: 0xfb7185,
+            transparent: true,
+            opacity: 0.25,
+            wireframe: true
+        });
+        const glowMesh = new THREE.Mesh(glowGeo, glowMat);
+        particleMesh.add(glowMesh);
 
-    // 3. Dynamic Curved Trajectory Trail
-    const maxTrailPoints = CONFIG.trailResolution;
-    const trailPositions = new Float32Array(maxTrailPoints * 3);
-    const trailColors = new Float32Array(maxTrailPoints * 3);
+        // 3. Dynamic Curved Trajectory Trail
+        const maxTrailPoints = CONFIG.trailResolution;
+        const trailPositions = new Float32Array(maxTrailPoints * 3);
+        const trailColors = new Float32Array(maxTrailPoints * 3);
 
-    const trailGeometry = new THREE.BufferGeometry();
-    trailGeometry.setAttribute("position", new THREE.BufferAttribute(trailPositions, 3));
-    trailGeometry.setAttribute("color", new THREE.BufferAttribute(trailColors, 3));
+        const trailGeometry = new THREE.BufferGeometry();
+        trailGeometry.setAttribute("position", new THREE.BufferAttribute(trailPositions, 3));
+        trailGeometry.setAttribute("color", new THREE.BufferAttribute(trailColors, 3));
 
-    const trailMaterial = new THREE.LineBasicMaterial({
-      vertexColors: true,
-      linewidth: 2.5,
-      transparent: true,
-      opacity: 0.95
-    });
-    const trailLine = new THREE.Line(trailGeometry, trailMaterial);
-    scene.add(trailLine);
+        const trailMaterial = new THREE.LineBasicMaterial({
+            vertexColors: true,
+            linewidth: 2.5,
+            transparent: true,
+            opacity: 0.95
+        });
+        const trailLine = new THREE.Line(trailGeometry, trailMaterial);
+        scene.add(trailLine);
 
-    let trailHistory = [];
+        let trailHistory = [];
 
-    /**
-     * Updates the Ghost Straight Line path based strictly on theta.
-     * Initial velocity vector v0 is oriented in X-Z plane:
-     * v0 = (v * sin(theta), 0, v * cos(theta))
-     */
-    function updateGhostLine() {
-      const rad = (thetaDeg * Math.PI) / 180.0;
-      const dirX = Math.sin(rad);
-      const dirY = 0.0;
-      const dirZ = Math.cos(rad);
+        function updateGhostLine() {
+            const rad = (thetaDeg * Math.PI) / 180.0;
+            const dirX = Math.sin(rad);
+            const dirY = 0.0;
+            const dirZ = Math.cos(rad);
 
-      const positions = ghostGeometry.attributes.position.array;
-      const totalLen = CONFIG.ghostLength;
+            const positions = ghostGeometry.attributes.position.array;
+            const totalLen = CONFIG.ghostLength;
 
-      for (let i = 0; i < ghostPointsCount; i++) {
-        const t = (i / (ghostPointsCount - 1)) * totalLen;
-        positions[i * 3] = dirX * t;
-        positions[i * 3 + 1] = dirY * t;
-        positions[i * 3 + 2] = dirZ * t;
-      }
-      ghostGeometry.attributes.position.needsUpdate = true;
-      ghostLine.computeLineDistances();
+            for (let i = 0; i < ghostPointsCount; i++) {
+                const t = (i / (ghostPointsCount - 1)) * totalLen;
+                positions[i * 3] = dirX * t;
+                positions[i * 3 + 1] = dirY * t;
+                positions[i * 3 + 2] = dirZ * t;
+            }
+            ghostGeometry.attributes.position.needsUpdate = true;
+            ghostLine.computeLineDistances();
 
-      // Position terminal arrowhead of undeflected vector
-      const endX = dirX * totalLen;
-      const endY = 0;
-      const endZ = dirZ * totalLen;
-      ghostCone.position.set(endX, endY, endZ);
+            const endX = dirX * totalLen;
+            const endY = 0;
+            const endZ = dirZ * totalLen;
+            ghostCone.position.set(endX, endY, endZ);
 
-      // Orient cone towards direction of travel
-      const targetVec = new THREE.Vector3(dirX, dirY, dirZ).normalize();
-      ghostCone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), targetVec);
-    }
-
-    /**
-     * Evaluates exact closed-form analytical solution of the Lorentz force
-     * F = q(v x B).
-     * With B = (0, 0, B_z) and initial velocity v0 = (v*sin(theta), 0, v*cos(theta)):
-     * - Parallel motion (Z): z(t) = v_parallel * t = (v * cos(theta)) * t
-     * - Gyration (X-Y plane):
-     *     x(t) = r * sin(omega * t)
-     *     y(t) = r * (1 - cos(omega * t))  (Starts tangential to X-axis at origin)
-     *     where r = (v * sin(theta)) / omega
-     */
-    function getLorentzPosition(t, rad) {
-      const vPerp = CONFIG.vTotal * Math.sin(rad);
-      const vPar = CONFIG.vTotal * Math.cos(rad);
-      const r = CONFIG.omega > 0.0001 ? vPerp / CONFIG.omega : 0;
-
-      const x = r * Math.sin(CONFIG.omega * t);
-      const y = r * (1.0 - Math.cos(CONFIG.omega * t));
-      const z = vPar * t;
-
-      return { x, y, z, r, vPerp, vPar };
-    }
-
-    const hudRegime = document.getElementById("hud-regime");
-    const hudVperp = document.getElementById("hud-vperp");
-    const hudVpar = document.getElementById("hud-vpar");
-    const hudRadius = document.getElementById("hud-radius");
-    const hudPitch = document.getElementById("hud-pitch");
-    const thetaBadge = document.getElementById("theta-badge");
-    const thetaSlider = document.getElementById("theta-slider");
-
-    function updateHUD() {
-      thetaBadge.textContent = Number(thetaDeg).toFixed(1) + "°";
-
-      const rad = (thetaDeg * Math.PI) / 180.0;
-      const vPerp = CONFIG.vTotal * Math.sin(rad);
-      const vPar = CONFIG.vTotal * Math.cos(rad);
-      const r = CONFIG.omega > 0 ? vPerp / CONFIG.omega : 0;
-      const period = (2 * Math.PI) / CONFIG.omega;
-      const pitch = vPar * period;
-
-      hudVperp.textContent = (vPerp / CONFIG.vTotal).toFixed(2) + " v (" + vPerp.toFixed(1) + " m/s)";
-      hudVpar.textContent = (vPar / CONFIG.vTotal).toFixed(2) + " v (" + vPar.toFixed(1) + " m/s)";
-      hudRadius.textContent = r.toFixed(2) + " m";
-
-      if (thetaDeg <= 0.5) {
-        hudRegime.textContent = "Straight Linear Drift";
-        hudPitch.textContent = "N/A (Infinite)";
-      } else if (thetaDeg >= 89.5) {
-        hudRegime.textContent = "Planar Circular Orbit";
-        hudPitch.textContent = "0.00 m (Closed circle)";
-      } else {
-        hudRegime.textContent = "Helical Motion (Solenoid)";
-        hudPitch.textContent = pitch.toFixed(2) + " m";
-      }
-    }
-
-    function resetParticleCycle() {
-      simTime = 0.0;
-      trailHistory = [];
-      const posAttr = trailGeometry.attributes.position;
-      const colAttr = trailGeometry.attributes.color;
-      for (let i = 0; i < maxTrailPoints * 3; i++) {
-        posAttr.array[i] = 0;
-        colAttr.array[i] = 0;
-      }
-      posAttr.needsUpdate = true;
-      colAttr.needsUpdate = true;
-    }
-
-    function onThetaChange(newTheta) {
-      thetaDeg = parseFloat(newTheta);
-      thetaSlider.value = thetaDeg;
-      updateGhostLine();
-      updateHUD();
-      resetParticleCycle();
-    }
-
-    function setTheta(val) {
-      onThetaChange(val);
-    }
-
-    thetaSlider.addEventListener("input", (e) => {
-      onThetaChange(e.target.value);
-    });
-
-    let lastClock = performance.now();
-
-    function animate() {
-      requestAnimationFrame(animate);
-
-      const now = performance.now();
-      const deltaSec = Math.min((now - lastClock) / 1000, 0.1);
-      lastClock = now;
-
-      // Advance physics time
-      simTime += deltaSec * CONFIG.timeScale;
-
-      const rad = (thetaDeg * Math.PI) / 180.0;
-      const state = getLorentzPosition(simTime, rad);
-
-      // Update particle 3D position
-      particleMesh.position.set(state.x, state.y, state.z);
-      pointLight.position.set(state.x, state.y, state.z);
-
-      // Record point for trail
-      trailHistory.push(new THREE.Vector3(state.x, state.y, state.z));
-
-      // Reset when particle completes trajectory corridor
-      const maxZReach = 75;
-      const isCircularLooping = (thetaDeg >= 89.5 && simTime > (Math.PI * 6) / CONFIG.omega);
-      if (state.z > maxZReach || isCircularLooping) {
-        resetParticleCycle();
-      }
-
-      // Maintain buffer trail
-      if (trailHistory.length > maxTrailPoints) {
-        trailHistory.shift();
-      }
-
-      // Update Trajectory Buffer Attributes
-      const positions = trailGeometry.attributes.position.array;
-      const colors = trailGeometry.attributes.color.array;
-      const count = trailHistory.length;
-
-      for (let i = 0; i < maxTrailPoints; i++) {
-        const idx = i * 3;
-        if (i < count) {
-          const pt = trailHistory[i];
-          positions[idx] = pt.x;
-          positions[idx + 1] = pt.y;
-          positions[idx + 2] = pt.z;
-
-          // Vibrant fade-in gradient for trail head
-          const progress = i / count;
-          colors[idx] = 0.95 * progress + 0.05;     // R
-          colors[idx + 1] = 0.25 * progress;        // G
-          colors[idx + 2] = 0.38 * progress + 0.1;  // B
-        } else if (count > 0) {
-          // Fill trailing unused buffer with tail position
-          const last = trailHistory[0];
-          positions[idx] = last.x;
-          positions[idx + 1] = last.y;
-          positions[idx + 2] = last.z;
-          colors[idx] = 0;
-          colors[idx + 1] = 0;
-          colors[idx + 2] = 0;
+            const targetVec = new THREE.Vector3(dirX, dirY, dirZ).normalize();
+            ghostCone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), targetVec);
         }
-      }
-      trailGeometry.attributes.position.needsUpdate = true;
-      trailGeometry.attributes.color.needsUpdate = true;
-      trailGeometry.setDrawRange(0, count);
 
-      // Gentle pulsating glow for particle
-      const pulse = 1.0 + Math.sin(now * 0.006) * 0.2;
-      glowMesh.scale.set(pulse, pulse, pulse);
+        function getLorentzPosition(t, rad) {
+            const vPerp = CONFIG.vTotal * Math.sin(rad);
+            const vPar = CONFIG.vTotal * Math.cos(rad);
+            const r = CONFIG.omega > 0.0001 ? vPerp / CONFIG.omega : 0;
 
-      // Update Orbit controls smoothly
-      controls.update();
+            const x = r * Math.sin(CONFIG.omega * t);
+            const y = r * (1.0 - Math.cos(CONFIG.omega * t));
+            const z = vPar * t;
 
-      // Render 3D Frame
-      renderer.render(scene, camera);
-    }
+            return { x, y, z };
+        }
 
-    // Window resizing handler
-    window.addEventListener("resize", () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+        const thetaBadge = document.getElementById("theta-badge");
+        const thetaSlider = document.getElementById("theta-slider");
 
-    // Start simulation
-    window.onload = function () {
-      updateGhostLine();
-      updateHUD();
-      animate();
-    };
-  </script>
+        function resetParticleCycle() {
+            simTime = 0.0;
+            trailHistory = [];
+            const posAttr = trailGeometry.attributes.position;
+            const colAttr = trailGeometry.attributes.color;
+            for (let i = 0; i < maxTrailPoints * 3; i++) {
+                posAttr.array[i] = 0;
+                colAttr.array[i] = 0;
+            }
+            posAttr.needsUpdate = true;
+            colAttr.needsUpdate = true;
+        }
+
+        function onThetaChange(newTheta) {
+            thetaDeg = parseFloat(newTheta);
+            thetaSlider.value = thetaDeg;
+            thetaBadge.textContent = Number(thetaDeg).toFixed(1) + "°";
+            updateGhostLine();
+            resetParticleCycle();
+        }
+
+        function setTheta(val) {
+            onThetaChange(val);
+        }
+
+        thetaSlider.addEventListener("input", (e) => {
+            onThetaChange(e.target.value);
+        });
+
+        let lastClock = performance.now();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const now = performance.now();
+            const deltaSec = Math.min((now - lastClock) / 1000, 0.1);
+            lastClock = now;
+
+            simTime += deltaSec * CONFIG.timeScale;
+
+            const rad = (thetaDeg * Math.PI) / 180.0;
+            const state = getLorentzPosition(simTime, rad);
+
+            particleMesh.position.set(state.x, state.y, state.z);
+            pointLight.position.set(state.x, state.y, state.z);
+
+            trailHistory.push(new THREE.Vector3(state.x, state.y, state.z));
+
+            const maxZReach = 75;
+            const isCircularLooping = (thetaDeg >= 89.5 && simTime > (Math.PI * 6) / CONFIG.omega);
+            if (state.z > maxZReach || isCircularLooping) {
+                resetParticleCycle();
+            }
+
+            if (trailHistory.length > maxTrailPoints) {
+                trailHistory.shift();
+            }
+
+            const positions = trailGeometry.attributes.position.array;
+            const colors = trailGeometry.attributes.color.array;
+            const count = trailHistory.length;
+
+            for (let i = 0; i < maxTrailPoints; i++) {
+                const idx = i * 3;
+                if (i < count) {
+                    const pt = trailHistory[i];
+                    positions[idx] = pt.x;
+                    positions[idx + 1] = pt.y;
+                    positions[idx + 2] = pt.z;
+
+                    const progress = i / count;
+                    colors[idx] = 0.95 * progress + 0.05;
+                    colors[idx + 1] = 0.25 * progress;
+                    colors[idx + 2] = 0.38 * progress + 0.1;
+                } else if (count > 0) {
+                    const last = trailHistory[0];
+                    positions[idx] = last.x;
+                    positions[idx + 1] = last.y;
+                    positions[idx + 2] = last.z;
+                    colors[idx] = 0;
+                    colors[idx + 1] = 0;
+                    colors[idx + 2] = 0;
+                }
+            }
+            trailGeometry.attributes.position.needsUpdate = true;
+            trailGeometry.attributes.color.needsUpdate = true;
+            trailGeometry.setDrawRange(0, count);
+
+            const pulse = 1.0 + Math.sin(now * 0.006) * 0.2;
+            glowMesh.scale.set(pulse, pulse, pulse);
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener("resize", () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        window.onload = function() {
+            updateGhostLine();
+            animate();
+        };
+    </script>
 </body>
+
 </html>
