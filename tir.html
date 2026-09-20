@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Total Internal Reflection & 360° Optics Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow: hidden;
+            background-color: #030712;
+            color: #f3f4f6;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+        }
+
+        input[type=range]:focus {
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #1f2937;
+            border-radius: 9999px;
+            border: 1px solid #374151;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.7), 0 0 0 2px #0f172a;
+            transition: transform 0.15s ease, background-color 0.15s ease;
+        }
+
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            background: #7dd3fc;
+        }
+    </style>
+</head>
+
+<body class="relative w-screen h-screen m-0 p-0 overflow-hidden bg-gray-950">
+
+    <!-- Interactive Canvas Viewport -->
+    <canvas id="optics-canvas" class="absolute inset-0 w-full h-full cursor-crosshair"></canvas>
+
+    <!-- Header Overlay (Top Left) -->
+    <div class="absolute top-4 left-4 sm:top-5 sm:left-6 z-10 pointer-events-none max-w-xs sm:max-w-md">
+        <div class="bg-gray-900/85 backdrop-blur-md border border-gray-800 p-4 rounded-2xl shadow-2xl">
+            <div class="flex items-center gap-2 mb-1">
+                <span id="status-dot" class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+                <span id="status-text" class="text-xs font-semibold tracking-wider uppercase text-rose-400 mono">Total Internal Reflection</span>
+            </div>
+            <h1 class="text-lg sm:text-xl font-bold tracking-tight text-white mb-1">
+                360&deg; Refraction &amp; <span class="text-sky-400">TIR Lab</span>
+            </h1>
+            <p class="text-xs text-gray-400 leading-relaxed">
+                &bull; Drag laser emitter anywhere around the 360&deg; circle.<br />
+                Observe angles <span class="text-emerald-400 font-semibold mono">i</span>, <span class="text-sky-400 font-semibold mono">r'</span>, <span class="text-amber-400 font-semibold mono">r</span>, and critical angle <span class="text-amber-300 font-semibold mono">&theta;c</span>.
+            </p>
+        </div>
+    </div>
+
+    <!-- Mathematical Telemetry HUD (Top Right, Compact with minimize) -->
+    <div class="absolute top-4 right-4 sm:top-5 sm:right-6 z-20 pointer-events-none">
+        <div class="bg-gray-900/90 backdrop-blur-md border border-gray-800/90 rounded-2xl shadow-2xl mono text-xs w-48 sm:w-56 overflow-hidden">
+            <div class="flex justify-between items-center text-gray-400 p-2.5 pb-2 border-b border-gray-800 pointer-events-auto">
+                <span class="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">Optics Metrics</span>
+                <button id="hud-toggle" onclick="toggleHud()" class="text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 w-5 h-5 rounded flex items-center justify-center text-xs font-bold leading-none cursor-pointer transition">&minus;</button>
+            </div>
+            <div id="hud-body" class="p-2.5 pt-2 space-y-1.5 text-[10px] sm:text-[11px]">
+                <div class="flex justify-between text-gray-300">
+                    <span class="text-gray-400">Laser Angle:</span>
+                    <span id="hud-angle-raw" class="text-gray-200 font-semibold">225.0°</span>
+                </div>
+                <div class="flex justify-between text-gray-300">
+                    <span class="text-gray-400">Incidence (i):</span>
+                    <span id="hud-i" class="text-emerald-400 font-semibold">45.00°</span>
+                </div>
+                <div class="flex justify-between text-gray-300">
+                    <span class="text-gray-400">Refracted (r):</span>
+                    <span id="hud-r" class="text-cyan-400 font-semibold">None (TIR)</span>
+                </div>
+                <div class="flex justify-between text-gray-300">
+                    <span class="text-gray-400">Critical (&theta;c):</span>
+                    <span id="hud-tc" class="text-amber-400 font-semibold">41.81°</span>
+                </div>
+                <div class="flex justify-between text-gray-300 pt-1 border-t border-gray-800">
+                    <span class="text-gray-400">Reflectance (R):</span>
+                    <span id="hud-refl" class="text-rose-400 font-bold">100.0%</span>
+                </div>
+                <div class="flex justify-between text-gray-300">
+                    <span class="text-gray-400">Transmittance (T):</span>
+                    <span id="hud-trans" class="text-emerald-400 font-bold">0.0%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Bottom Deck -->
+    <div class="absolute bottom-4 inset-x-3 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-20 max-w-3xl sm:w-full">
+        <div class="bg-gray-900/95 backdrop-blur-xl border border-gray-800 p-4 sm:p-5 rounded-3xl shadow-2xl flex flex-col gap-3">
+            
+            <!-- Row 1: 360 Degree Position Slider -->
+            <div class="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+                <div class="flex items-center justify-between w-full sm:w-44 gap-2">
+                    <label for="deg-slider" class="text-xs uppercase font-bold tracking-wider text-gray-300 whitespace-nowrap">
+                        Laser Angle
+                    </label>
+                    <span id="deg-badge" class="mono text-xs px-2.5 py-1 bg-emerald-950 text-emerald-300 border border-emerald-700/60 rounded-xl font-bold min-w-[58px] text-center">
+                        225.0&deg;
+                    </span>
+                </div>
+                <div class="w-full flex items-center gap-2">
+                    <span class="text-[11px] font-bold text-gray-500 mono">0&deg;</span>
+                    <input id="deg-slider" type="range" min="0" max="360" step="0.5" value="225" class="w-full" aria-label="Laser Angle 360 degrees" />
+                    <span class="text-[11px] font-bold text-gray-500 mono">360&deg;</span>
+                </div>
+                <div class="flex items-center gap-1 w-full sm:w-auto justify-end">
+                    <button onclick="snapToCritical()" class="text-[11px] px-2.5 py-1 rounded bg-amber-950/70 border border-amber-700/60 text-amber-300 font-bold hover:bg-amber-900 transition">
+                        Snap &theta;c
+                    </button>
+                </div>
+            </div>
+
+            <!-- Row 2: Refractive Index n (Bottom Denser Medium) -->
+            <div class="flex items-center justify-between gap-3 border-t border-gray-800/80 pt-2.5 flex-wrap">
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <div class="flex items-center justify-between w-36 gap-1">
+                        <label for="n-slider" class="text-xs uppercase font-bold tracking-wider text-gray-300 whitespace-nowrap">
+                            Bottom (n₁)
+                        </label>
+                        <span id="n-badge" class="mono text-xs px-2 py-0.5 bg-sky-950 text-sky-300 border border-sky-700/60 rounded-lg font-bold min-w-[48px] text-center">
+                            1.50
+                        </span>
+                    </div>
+                    <input id="n-slider" type="range" min="1.05" max="2.42" step="0.01" value="1.50" class="w-36 sm:w-48" aria-label="Bottom medium refractive index" />
+                </div>
+
+                <div class="flex items-center gap-1.5">
+                    <span class="text-[10px] uppercase font-semibold text-gray-500 mr-1 hidden sm:inline">Medium:</span>
+                    <button onclick="setIndex(1.33)" class="text-[11px] px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-cyan-300 transition">Water (1.33)</button>
+                    <button onclick="setIndex(1.50)" class="text-[11px] px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-sky-300 transition">Glass (1.50)</button>
+                    <button onclick="setIndex(2.42)" class="text-[11px] px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-amber-300 transition">Diamond (2.42)</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("optics-canvas");
+        const ctx = canvas.getContext("2d");
+
+        // Optical Parameters
+        const state = {
+            sourceAngleDeg: 225.0, // 0 to 360 deg relative to center interface origin
+            sourceRadius: 220,     // Distance from origin O
+            nTop: 1.00,            // Rarer medium (Air)
+            nBottom: 1.50,         // Denser medium
+            isDragging: false,
+            timeAnim: 0
+        };
+
+        const degSlider = document.getElementById("deg-slider");
+        const degBadge = document.getElementById("deg-badge");
+        const nSlider = document.getElementById("n-slider");
+        const nBadge = document.getElementById("n-badge");
+
+        const hudAngleRaw = document.getElementById("hud-angle-raw");
+        const hudI = document.getElementById("hud-i");
+        const hudR = document.getElementById("hud-r");
+        const hudTc = document.getElementById("hud-tc");
+        const hudRefl = document.getElementById("hud-refl");
+        const hudTrans = document.getElementById("hud-trans");
+
+        const statusDot = document.getElementById("status-dot");
+        const statusText = document.getElementById("status-text");
+
+        function toggleHud() {
+            const body = document.getElementById("hud-body");
+            const btn = document.getElementById("hud-toggle");
+            if (body.classList.contains("hidden")) {
+                body.classList.remove("hidden");
+                btn.innerHTML = "&minus;";
+            } else {
+                body.classList.add("hidden");
+                btn.innerHTML = "+";
+            }
+        }
+
+        function resizeCanvas() {
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        window.addEventListener("resize", resizeCanvas);
+        resizeCanvas();
+
+        function setIndex(n) {
+            state.nBottom = n;
+            nSlider.value = n;
+            updateSimulation();
+        }
+
+        function snapToCritical() {
+            const critRad = Math.asin(state.nTop / state.nBottom);
+            const critDeg = (critRad * 180.0) / Math.PI;
+
+            // Snap laser to bottom-left quadrant critical angle: 270 - critDeg
+            state.sourceAngleDeg = Math.round((270 - critDeg) * 10) / 10;
+            degSlider.value = state.sourceAngleDeg;
+            updateSimulation();
+        }
+
+        degSlider.addEventListener("input", (e) => {
+            state.sourceAngleDeg = parseFloat(e.target.value);
+            updateSimulation();
+        });
+
+        nSlider.addEventListener("input", (e) => {
+            state.nBottom = parseFloat(e.target.value);
+            updateSimulation();
+        });
+
+        function updateSimulation() {
+            degBadge.textContent = state.sourceAngleDeg.toFixed(1) + "°";
+            nBadge.textContent = state.nBottom.toFixed(2);
+        }
+
+        function getOrigin() {
+            return {
+                x: window.innerWidth * 0.5,
+                y: window.innerHeight * 0.46
+            };
+        }
+
+        function handlePointer(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const origin = getOrigin();
+            const dx = (clientX - rect.left) - origin.x;
+            const dy = (clientY - rect.top) - origin.y;
+
+            let angleRad = Math.atan2(dy, dx);
+            let angleDeg = (angleRad * 180.0) / Math.PI;
+            if (angleDeg < 0) angleDeg += 360;
+
+            state.sourceAngleDeg = Math.round(angleDeg * 2) / 2;
+            degSlider.value = state.sourceAngleDeg;
+            state.sourceRadius = Math.min(340, Math.max(140, Math.hypot(dx, dy)));
+            updateSimulation();
+        }
+
+        canvas.addEventListener("pointerdown", (e) => {
+            state.isDragging = true;
+            handlePointer(e.clientX, e.clientY);
+        });
+
+        window.addEventListener("pointermove", (e) => {
+            if (state.isDragging) handlePointer(e.clientX, e.clientY);
+        });
+
+        window.addEventListener("pointerup", () => {
+            state.isDragging = false;
+        });
+
+        // Laser beam drawing helper
+        function drawLaserRay(p1, p2, coreColor, glowColor, width, opacity = 1.0) {
+            ctx.save();
+            ctx.globalAlpha = opacity;
+            ctx.shadowColor = glowColor;
+            ctx.shadowBlur = 12;
+            ctx.strokeStyle = glowColor;
+            ctx.lineWidth = width + 2.5;
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+
+            ctx.shadowBlur = 4;
+            ctx.strokeStyle = coreColor;
+            ctx.lineWidth = width;
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        /**
+         * Generic angle arc with label helper
+         */
+        function drawAngleArc(cx, cy, radius, startAngle, endAngle, label, color, isDashed = false) {
+            ctx.save();
+            if (isDashed) ctx.setLineDash([3, 3]);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1.5;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 6;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, startAngle, endAngle, false);
+            ctx.stroke();
+
+            if (label) {
+                const midAngle = (startAngle + endAngle) / 2;
+                const textRadius = radius + 14;
+                const textX = cx + textRadius * Math.cos(midAngle);
+                const textY = cy + textRadius * Math.sin(midAngle);
+
+                ctx.font = "bold 11px 'JetBrains Mono', monospace";
+                ctx.fillStyle = color;
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.shadowBlur = 4;
+                ctx.shadowColor = "#000000";
+                ctx.fillText(label, textX, textY);
+            }
+            ctx.restore();
+        }
+
+        function render() {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            ctx.clearRect(0, 0, w, h);
+            state.timeAnim += 0.04;
+
+            const origin = getOrigin();
+            const ifY = origin.y;
+
+            // 1. Medium backgrounds
+            // Top Medium (Air nTop)
+            ctx.fillStyle = "#030712";
+            ctx.fillRect(0, 0, w, ifY);
+
+            // Bottom Medium (Denser nBottom)
+            const bgGrad = ctx.createLinearGradient(0, ifY, 0, h);
+            bgGrad.addColorStop(0, "rgba(14, 116, 144, 0.22)");
+            bgGrad.addColorStop(1, "rgba(30, 58, 138, 0.35)");
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, ifY, w, h - ifY);
+
+            // Interface Line
+            ctx.strokeStyle = "rgba(56, 189, 248, 0.75)";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, ifY);
+            ctx.lineTo(w, ifY);
+            ctx.stroke();
+
+            // Medium Labels
+            ctx.font = "bold 12px 'JetBrains Mono', monospace";
+            ctx.fillStyle = "rgba(148, 163, 184, 0.5)";
+            ctx.fillText(`Top Medium (Air: n = ${state.nTop.toFixed(2)})`, 24, ifY - 14);
+            ctx.fillText(`Bottom Medium (Denser: n = ${state.nBottom.toFixed(2)})`, 24, ifY + 24);
+
+            // 2. Normal Line at origin (N - N')
+            ctx.save();
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = "rgba(156, 163, 175, 0.6)";
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(origin.x, ifY - 170);
+            ctx.lineTo(origin.x, ifY + 170);
+            ctx.stroke();
+            ctx.restore();
+
+            ctx.font = "11px 'JetBrains Mono', monospace";
+            ctx.fillStyle = "#9ca3af";
+            ctx.textAlign = "center";
+            ctx.fillText("N", origin.x, ifY - 178);
+            ctx.fillText("N'", origin.x, ifY + 188);
+
+            // 3. Laser Source Coordinates in 360 space
+            const rad = (state.sourceAngleDeg * Math.PI) / 180.0;
+            const sourcePos = {
+                x: origin.x + state.sourceRadius * Math.cos(rad),
+                y: origin.y + state.sourceRadius * Math.sin(rad)
+            };
+
+            const isInBottom = sourcePos.y > ifY;
+            const nFrom = isInBottom ? state.nBottom : state.nTop;
+            const nTo = isInBottom ? state.nTop : state.nBottom;
+
+            const dx = origin.x - sourcePos.x;
+            const dy = origin.y - sourcePos.y;
+
+            // Incidence angle i measured strictly relative to the respective vertical normal
+            const iRad = Math.atan2(Math.abs(dx), Math.abs(dy));
+            const iDeg = (iRad * 180.0) / Math.PI;
+
+            // Critical angle check
+            const isDenserToRarer = nFrom > nTo;
+            const critRad = isDenserToRarer ? Math.asin(nTo / nFrom) : Math.PI / 2;
+            const critDeg = (critRad * 180.0) / Math.PI;
+
+            // Snell's Law
+            const sinR = (nFrom / nTo) * Math.sin(iRad);
+            const isTIR = isDenserToRarer && sinR > 1.0;
+
+            let rRad = 0;
+            let rDeg = 0;
+            let reflectance = 1.0;
+            let transmittance = 0.0;
+
+            if (!isTIR) {
+                rRad = Math.asin(Math.min(1.0, Math.max(0.0, sinR)));
+                rDeg = (rRad * 180.0) / Math.PI;
+
+                const cosI = Math.cos(iRad);
+                const cosR = Math.cos(rRad);
+
+                const rs = Math.pow((nFrom * cosI - nTo * cosR) / (nFrom * cosI + nTo * cosR), 2);
+                const rp = Math.pow((nTo * cosI - nFrom * cosR) / (nTo * cosI + nFrom * cosR), 2);
+                reflectance = Math.min(1.0, Math.max(0.0, (rs + rp) / 2));
+                transmittance = 1.0 - reflectance;
+            } else {
+                reflectance = 1.0;
+                transmittance = 0.0;
+            }
+
+            // Update Telemetry Status
+            hudAngleRaw.textContent = state.sourceAngleDeg.toFixed(1) + "°";
+            hudI.textContent = iDeg.toFixed(2) + "°";
+            hudTc.textContent = isDenserToRarer ? critDeg.toFixed(2) + "°" : "N/A (Rarer)";
+            hudRefl.textContent = (reflectance * 100).toFixed(1) + "%";
+            hudTrans.textContent = (transmittance * 100).toFixed(1) + "%";
+
+            if (isTIR) {
+                hudR.textContent = "None (TIR)";
+                statusDot.className = "inline-block w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse";
+                statusText.className = "text-xs font-semibold tracking-wider uppercase text-rose-400 mono";
+                statusText.textContent = "Total Internal Reflection";
+            } else if (Math.abs(iDeg - critDeg) < 0.6 && isDenserToRarer) {
+                hudR.textContent = "90.00° (Grazing)";
+                statusDot.className = "inline-block w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse";
+                statusText.className = "text-xs font-semibold tracking-wider uppercase text-amber-400 mono";
+                statusText.textContent = "Critical Angle (Grazing)";
+            } else {
+                hudR.textContent = rDeg.toFixed(2) + "°";
+                statusDot.className = "inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse";
+                statusText.className = "text-xs font-semibold tracking-wider uppercase text-emerald-400 mono";
+                statusText.textContent = "Standard Refraction";
+            }
+
+            const dirX = Math.sign(origin.x - sourcePos.x) || 1;
+
+            // 4. Incident Beam
+            drawLaserRay(sourcePos, origin, "#a7f3d0", "#10b981", 3.0, 1.0);
+
+            // 5. Reflected Beam
+            const reflTargetLen = state.sourceRadius * 1.1;
+            const reflSignY = isInBottom ? 1 : -1;
+            const reflEnd = {
+                x: origin.x + dirX * reflTargetLen * Math.sin(iRad),
+                y: origin.y + reflSignY * reflTargetLen * Math.cos(iRad)
+            };
+
+            const reflOpacity = Math.max(0.18, reflectance);
+            const reflColorCore = isTIR ? "#fecdd3" : "#bae6fd";
+            const reflColorGlow = isTIR ? "#f43f5e" : "#0284c7";
+            drawLaserRay(origin, reflEnd, reflColorCore, reflColorGlow, isTIR ? 3.0 : 2.0, reflOpacity);
+
+            // 6. Refracted Beam (if not in TIR)
+            let refrEnd = null;
+            if (!isTIR && transmittance > 0.001) {
+                const refrTargetLen = state.sourceRadius * 1.1;
+                const refrSignY = isInBottom ? -1 : 1;
+                refrEnd = {
+                    x: origin.x + dirX * refrTargetLen * Math.sin(rRad),
+                    y: origin.y + refrSignY * refrTargetLen * Math.cos(rRad)
+                };
+
+                const transOpacity = Math.max(0.15, transmittance);
+                drawLaserRay(origin, refrEnd, "#fde68a", "#f59e0b", 2.2, transOpacity);
+            }
+
+            // 7. Evanescent Wave visualization during TIR
+            if (isTIR && isInBottom) {
+                ctx.save();
+                ctx.strokeStyle = "rgba(251, 191, 36, 0.7)";
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([3, 3]);
+
+                const skinDepth = 22;
+                const waveSpan = 70;
+                ctx.beginPath();
+                for (let sx = -waveSpan; sx <= waveSpan; sx += 3) {
+                    const waveX = origin.x + dirX * (sx + waveSpan);
+                    const decay = Math.exp(-Math.abs(sx) / 45);
+                    const waveY = ifY - Math.sin(sx * 0.35 - state.timeAnim * 3) * skinDepth * decay;
+                    if (sx === -waveSpan) ctx.moveTo(waveX, waveY);
+                    else ctx.lineTo(waveX, waveY);
+                }
+                ctx.stroke();
+
+                ctx.font = "10px 'JetBrains Mono', monospace";
+                ctx.fillStyle = "#fbbf24";
+                ctx.fillText("Evanescent Field", origin.x + dirX * 35, ifY - 26);
+                ctx.restore();
+            }
+
+            // 8. Dynamic Angle Arcs & Notations
+            if (iDeg > 3.0) {
+                // Determine base normal angle for incident medium
+                // If in bottom: incident normal points downward (+PI/2)
+                // If in top: incident normal points upward (-PI/2)
+                const incNormAngle = isInBottom ? Math.PI / 2 : -Math.PI / 2;
+
+                // Incident ray angle from normal:
+                // If laser is to the left (dirX > 0): ray arrives at origin angled counter-clockwise/clockwise
+                const sourceAngleFromOrigin = Math.atan2(sourcePos.y - origin.y, sourcePos.x - origin.x);
+
+                // Arc for Incidence Angle (i)
+                const arcStartI = Math.min(incNormAngle, sourceAngleFromOrigin);
+                const arcEndI = Math.max(incNormAngle, sourceAngleFromOrigin);
+                drawAngleArc(origin.x, origin.y, 34, arcStartI, arcEndI, "i", "#34d399");
+
+                // Arc for Reflected Angle (r' = i)
+                const reflAngleFromOrigin = Math.atan2(reflEnd.y - origin.y, reflEnd.x - origin.x);
+                const arcStartRefl = Math.min(incNormAngle, reflAngleFromOrigin);
+                const arcEndRefl = Math.max(incNormAngle, reflAngleFromOrigin);
+                drawAngleArc(origin.x, origin.y, 44, arcStartRefl, arcEndRefl, "r'", isTIR ? "#f43f5e" : "#38bdf8");
+
+                // Arc for Critical Angle Reference (θc) if incident in denser medium
+                if (isDenserToRarer) {
+                    const critSignX = dirX > 0 ? -1 : 1;
+                    const critAngleTarget = incNormAngle + (critSignX * critRad);
+                    const arcStartC = Math.min(incNormAngle, critAngleTarget);
+                    const arcEndC = Math.max(incNormAngle, critAngleTarget);
+                    drawAngleArc(origin.x, origin.y, 60, arcStartC, arcEndC, "θc", "rgba(251, 191, 36, 0.75)", true);
+                }
+
+                // Arc for Refracted Angle (r) if ray crosses boundary
+                if (!isTIR && refrEnd && rDeg > 3.0) {
+                    // Refracted normal points in opposite medium
+                    const refrNormAngle = isInBottom ? -Math.PI / 2 : Math.PI / 2;
+                    const refrAngleFromOrigin = Math.atan2(refrEnd.y - origin.y, refrEnd.x - origin.x);
+                    const arcStartR = Math.min(refrNormAngle, refrAngleFromOrigin);
+                    const arcEndR = Math.max(refrNormAngle, refrAngleFromOrigin);
+                    drawAngleArc(origin.x, origin.y, 38, arcStartR, arcEndR, "r", "#f59e0b");
+                }
+            }
+
+            // 9. Laser Source Emitter Puck
+            ctx.save();
+            ctx.translate(sourcePos.x, sourcePos.y);
+            const pointingAngle = Math.atan2(origin.y - sourcePos.y, origin.x - sourcePos.x);
+            ctx.rotate(pointingAngle);
+
+            // Emitter body
+            ctx.fillStyle = "#1e293b";
+            ctx.strokeStyle = "#38bdf8";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.rect(-24, -10, 24, 20);
+            ctx.fill();
+            ctx.stroke();
+
+            // Glowing diode
+            ctx.fillStyle = "#34d399";
+            ctx.shadowColor = "#34d399";
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(2, 0, 4.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+
+            // Circular Drag Rail & Pulse
+            ctx.save();
+            ctx.strokeStyle = "rgba(56, 189, 248, 0.15)";
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.arc(origin.x, origin.y, state.sourceRadius, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+
+            // Center Point O
+            ctx.fillStyle = "#ffffff";
+            ctx.shadowColor = "#38bdf8";
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.arc(origin.x, origin.y, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Point O Label
+            ctx.font = "bold 11px 'JetBrains Mono', monospace";
+            ctx.fillStyle = "#e2e8f0";
+            ctx.fillText("O", origin.x - 14, origin.y + 14);
+
+            requestAnimationFrame(render);
+        }
+
+        updateSimulation();
+        requestAnimationFrame(render);
+    </script>
+</body>
+
+</html>
