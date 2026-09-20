@@ -525,48 +525,51 @@
                 ctx.restore();
             }
 
-            // 8. Dynamic Angle Arcs & Notations
-            if (iDeg > 3.0) {
-                // Determine base normal angle for incident medium
-                // If in bottom: incident normal points downward (+PI/2)
-                // If in top: incident normal points upward (-PI/2)
+// 8. Dynamic Angle Arcs & Notations
+            if (iDeg > 2.0) {
+                // Determine base normal angle for incident medium:
+                // If laser in bottom: incident normal points straight down (+PI/2)
+                // If laser in top: incident normal points straight up (-PI/2)
                 const incNormAngle = isInBottom ? Math.PI / 2 : -Math.PI / 2;
 
-                // Incident ray angle from normal:
-                // If laser is to the left (dirX > 0): ray arrives at origin angled counter-clockwise/clockwise
-                const sourceAngleFromOrigin = Math.atan2(sourcePos.y - origin.y, sourcePos.x - origin.x);
+                // Angle of incoming ray from origin towards source:
+                const rayAngle = Math.atan2(sourcePos.y - origin.y, sourcePos.x - origin.x);
 
-                // Arc for Incidence Angle (i)
-                const arcStartI = Math.min(incNormAngle, sourceAngleFromOrigin);
-                const arcEndI = Math.max(incNormAngle, sourceAngleFromOrigin);
-                drawAngleArc(origin.x, origin.y, 34, arcStartI, arcEndI, "i", "#34d399");
+                // Sweep sign: +1 if ray is counterclockwise from normal, -1 if clockwise
+                // Normal is along Y-axis, source x offset is (sourcePos.x - origin.x)
+                const sweepSide = (sourcePos.x >= origin.x) ? 1 : -1;
+                const sweepInc = (isInBottom ? -1 : 1) * sweepSide;
 
-                // Arc for Reflected Angle (r' = i)
-                const reflAngleFromOrigin = Math.atan2(reflEnd.y - origin.y, reflEnd.x - origin.x);
-                const arcStartRefl = Math.min(incNormAngle, reflAngleFromOrigin);
-                const arcEndRefl = Math.max(incNormAngle, reflAngleFromOrigin);
-                drawAngleArc(origin.x, origin.y, 44, arcStartRefl, arcEndRefl, "r'", isTIR ? "#f43f5e" : "#38bdf8");
+                // 1. Incidence Angle (i) Arc: sweeps between normal and ray
+                const startI = Math.min(incNormAngle, rayAngle);
+                const endI = Math.max(incNormAngle, rayAngle);
+                drawAngleArc(origin.x, origin.y, 34, startI, endI, "i", "#34d399");
 
-                // Arc for Critical Angle Reference (θc) if incident in denser medium
+                // 2. Reflected Angle (r') Arc: sweeps from normal to reflected ray on opposite side
+                const reflAngle = Math.atan2(reflEnd.y - origin.y, reflEnd.x - origin.x);
+                const startRefl = Math.min(incNormAngle, reflAngle);
+                const endRefl = Math.max(incNormAngle, reflAngle);
+                drawAngleArc(origin.x, origin.y, 44, startRefl, endRefl, "r'", isTIR ? "#f43f5e" : "#38bdf8");
+
+                // 3. Critical Angle Reference (θc) Arc:
+                // Must be drawn on the SAME side as the incident ray, measured from normal by exactly critRad
                 if (isDenserToRarer) {
-                    const critSignX = dirX > 0 ? -1 : 1;
-                    const critAngleTarget = incNormAngle + (critSignX * critRad);
-                    const arcStartC = Math.min(incNormAngle, critAngleTarget);
-                    const arcEndC = Math.max(incNormAngle, critAngleTarget);
-                    drawAngleArc(origin.x, origin.y, 60, arcStartC, arcEndC, "θc", "rgba(251, 191, 36, 0.75)", true);
+                    // Start at the normal, step by critRad towards the incident beam side
+                    const critTargetAngle = incNormAngle - sweepSide * critRad * (isInBottom ? 1 : -1);
+                    const startCrit = Math.min(incNormAngle, critTargetAngle);
+                    const endCrit = Math.max(incNormAngle, critTargetAngle);
+                    drawAngleArc(origin.x, origin.y, 56, startCrit, endCrit, "θc", "rgba(251, 191, 36, 0.8)", true);
                 }
 
-                // Arc for Refracted Angle (r) if ray crosses boundary
-                if (!isTIR && refrEnd && rDeg > 3.0) {
-                    // Refracted normal points in opposite medium
+                // 4. Refracted Angle (r) Arc:
+                if (!isTIR && refrEnd && rDeg > 2.0) {
                     const refrNormAngle = isInBottom ? -Math.PI / 2 : Math.PI / 2;
-                    const refrAngleFromOrigin = Math.atan2(refrEnd.y - origin.y, refrEnd.x - origin.x);
-                    const arcStartR = Math.min(refrNormAngle, refrAngleFromOrigin);
-                    const arcEndR = Math.max(refrNormAngle, refrAngleFromOrigin);
-                    drawAngleArc(origin.x, origin.y, 38, arcStartR, arcEndR, "r", "#f59e0b");
+                    const refrAngle = Math.atan2(refrEnd.y - origin.y, refrEnd.x - origin.x);
+                    const startR = Math.min(refrNormAngle, refrAngle);
+                    const endR = Math.max(refrNormAngle, refrAngle);
+                    drawAngleArc(origin.x, origin.y, 38, startR, endR, "r", "#f59e0b");
                 }
             }
-
             // 9. Laser Source Emitter Puck
             ctx.save();
             ctx.translate(sourcePos.x, sourcePos.y);
