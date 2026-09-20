@@ -436,7 +436,7 @@
                         isInfinity: true, fSigned, isLens
                     };
                 } else {
-                    const vInf = fSigned; // Mirror focal plane
+                    const vInf = fSigned; // Mirror focal point
                     return {
                         u: -Infinity, v: vInf, m: 0, hImg: 0,
                         isReal: fSigned < 0, isVirtual: fSigned > 0,
@@ -556,7 +556,13 @@
             const isPlane = state.device.includes("plane");
 
             if (!isPlane) {
-                const pts = [
+                const isMirror = state.device.includes("mirror");
+                const pts = isMirror ? [
+                    { x: -fMag, label: state.device === "concave_mirror" ? "F" : "F (Virtual)" },
+                    { x: -2 * fMag, label: state.device === "concave_mirror" ? "C (2F)" : "C" },
+                    { x: fMag, label: state.device === "convex_mirror" ? "F" : "F'" },
+                    { x: 2 * fMag, label: state.device === "convex_mirror" ? "C (2F)" : "C'" }
+                ] : [
                     { x: -fMag, label: "F₁" },
                     { x: -2 * fMag, label: "2F₁" },
                     { x: fMag, label: "F₂" },
@@ -576,7 +582,7 @@
                 });
             }
 
-            // 3. Render Optical Device at x = 0
+            // 3. Render Optical Device at x = 0 (Fixed Curvature & Real Silvering)
             const devH = 260;
             ctx.save();
             if (state.device === "convex_lens") {
@@ -606,44 +612,69 @@
                 ctx.strokeRect(-12, -devH / 2, 24, devH);
                 ctx.fillRect(-12, -devH / 2, 24, devH);
             } else if (state.device === "concave_mirror") {
-                ctx.strokeStyle = "rgba(168, 85, 247, 0.9)";
-                ctx.lineWidth = 3;
+                // Converging mirror: reflective face looks left, caves inward to the right
+                const curveDepth = 22;
+                ctx.strokeStyle = "rgba(168, 85, 247, 0.95)";
+                ctx.lineWidth = 3.5;
+                ctx.shadowColor = "#c084fc";
+                ctx.shadowBlur = 8;
                 ctx.beginPath();
-                ctx.arc(fMag * 2, 0, fMag * 2, Math.PI - 0.5, Math.PI + 0.5);
+                ctx.moveTo(-curveDepth, -devH / 2);
+                ctx.quadraticCurveTo(curveDepth * 0.4, 0, -curveDepth, devH / 2);
                 ctx.stroke();
-                // Hatching on non-reflecting rear surface
-                ctx.strokeStyle = "rgba(107, 114, 128, 0.5)";
-                ctx.lineWidth = 1;
-                for (let y = -devH / 2; y <= devH / 2; y += 12) {
+
+                // Silvered rear hatching on convex outer surface (facing right)
+                ctx.shadowBlur = 0;
+                ctx.strokeStyle = "rgba(156, 163, 175, 0.6)";
+                ctx.lineWidth = 1.2;
+                const step = 14;
+                for (let y = -devH / 2 + 6; y <= devH / 2 - 6; y += step) {
+                    const normY = y / (devH / 2);
+                    const arcX = -curveDepth + (1 - normY * normY) * (curveDepth * 1.4);
                     ctx.beginPath();
-                    ctx.moveTo(4, y);
-                    ctx.lineTo(12, y - 6);
+                    ctx.moveTo(arcX, y);
+                    ctx.lineTo(arcX + 10, y - 6);
                     ctx.stroke();
                 }
             } else if (state.device === "convex_mirror") {
-                ctx.strokeStyle = "rgba(236, 72, 153, 0.9)";
-                ctx.lineWidth = 3;
+                // Diverging mirror: reflective face looks left, bulges outward to the left
+                const curveDepth = 22;
+                ctx.strokeStyle = "rgba(236, 72, 153, 0.95)";
+                ctx.lineWidth = 3.5;
+                ctx.shadowColor = "#f472b6";
+                ctx.shadowBlur = 8;
                 ctx.beginPath();
-                ctx.arc(-fMag * 2, 0, fMag * 2, -0.5, 0.5);
+                ctx.moveTo(curveDepth, -devH / 2);
+                ctx.quadraticCurveTo(-curveDepth * 0.4, 0, curveDepth, devH / 2);
                 ctx.stroke();
-                ctx.strokeStyle = "rgba(107, 114, 128, 0.5)";
-                ctx.lineWidth = 1;
-                for (let y = -devH / 2; y <= devH / 2; y += 12) {
+
+                // Silvered rear hatching on inner concave cavity (facing right)
+                ctx.shadowBlur = 0;
+                ctx.strokeStyle = "rgba(156, 163, 175, 0.6)";
+                ctx.lineWidth = 1.2;
+                const step = 14;
+                for (let y = -devH / 2 + 6; y <= devH / 2 - 6; y += step) {
+                    const normY = y / (devH / 2);
+                    const arcX = curveDepth - (1 - normY * normY) * (curveDepth * 1.4);
                     ctx.beginPath();
-                    ctx.moveTo(0, y);
-                    ctx.lineTo(8, y - 6);
+                    ctx.moveTo(arcX, y);
+                    ctx.lineTo(arcX + 10, y - 6);
                     ctx.stroke();
                 }
             } else if (state.device === "plane_mirror") {
-                ctx.strokeStyle = "rgba(251, 191, 36, 0.9)";
-                ctx.lineWidth = 3;
+                ctx.strokeStyle = "rgba(251, 191, 36, 0.95)";
+                ctx.lineWidth = 3.5;
+                ctx.shadowColor = "#fbbf24";
+                ctx.shadowBlur = 8;
                 ctx.beginPath();
                 ctx.moveTo(0, -devH / 2);
                 ctx.lineTo(0, devH / 2);
                 ctx.stroke();
-                ctx.strokeStyle = "rgba(107, 114, 128, 0.5)";
-                ctx.lineWidth = 1;
-                for (let y = -devH / 2; y <= devH / 2; y += 12) {
+
+                ctx.shadowBlur = 0;
+                ctx.strokeStyle = "rgba(156, 163, 175, 0.6)";
+                ctx.lineWidth = 1.2;
+                for (let y = -devH / 2 + 6; y <= devH / 2 - 6; y += 14) {
                     ctx.beginPath();
                     ctx.moveTo(0, y);
                     ctx.lineTo(8, y - 6);
@@ -656,7 +687,7 @@
             const rayMax = 650;
 
             if (state.isInfinity) {
-                // Beam from infinity: incoming parallel rays
+                // Collimated beam from infinity
                 const rayYOffsets = [-70, -35, 0, 35, 70];
                 rayYOffsets.forEach(ry => {
                     const fromPt = { x: -800, y: ry };
@@ -670,36 +701,32 @@
                             drawRay(atDevice, { x: fMag, y: 0 }, "#38bdf8", 2);
                             drawRay({ x: fMag, y: 0 }, toPt, "#38bdf8", 1.5);
                         } else if (state.device === "concave_lens") {
-                            // Diverges from -f
                             const slope = ry / fMag;
                             const toPt = { x: 500, y: ry + slope * 500 };
                             drawRay(atDevice, toPt, "#38bdf8", 2);
                             drawRay(atDevice, { x: -fMag, y: 0 }, "rgba(56, 189, 248, 0.4)", 1.5, true);
                         } else {
-                            // Plane glass
                             drawRay(atDevice, { x: 500, y: ry }, "#38bdf8", 2);
                         }
                     } else {
                         // Mirrors
                         if (state.device === "concave_mirror") {
-                            // Reflects through -f
                             const toPt = { x: -500, y: -(( -500 - (-fMag) ) / (-fMag)) * ry };
                             drawRay(atDevice, { x: -fMag, y: 0 }, "#c084fc", 2);
                             drawRay({ x: -fMag, y: 0 }, toPt, "#c084fc", 1.5);
                         } else if (state.device === "convex_mirror") {
-                            // Reflects away from +f
-                            const slope = -ry / fMag;
-                            const toPt = { x: -500, y: ry + slope * (-500) };
+                            // Fixed convex mirror ray: reflects outward away from virtual focus at +fMag
+                            const slope1 = (ry - 0) / (0 - fMag);
+                            const toPt = { x: -500, y: ry + slope1 * (-500) };
                             drawRay(atDevice, toPt, "#f472b6", 2);
                             drawRay(atDevice, { x: fMag, y: 0 }, "rgba(244, 114, 182, 0.4)", 1.5, true);
                         } else {
-                            // Plane mirror reflects horizontally back
                             drawRay(atDevice, { x: -500, y: ry }, "#fbbf24", 2);
                         }
                     }
                 });
 
-                // Focal Point Image Indicator
+                // Focal Point Indicator
                 if (Math.abs(opt.fSigned) < 4000) {
                     const focusX = opt.isLens ? (state.device === "convex_lens" ? fMag : -fMag) : (state.device === "concave_mirror" ? -fMag : fMag);
                     ctx.save();
@@ -718,12 +745,12 @@
                 }
 
             } else {
-                // Finite Object Arrow (x = u, y = 0 to -h)
+                // Finite Object Arrow
                 const objX = state.u;
                 const objH = state.h;
                 const tip = { x: objX, y: -objH };
 
-                // Draw Object Arrow (Green)
+                // Object Arrow (Green)
                 ctx.save();
                 ctx.strokeStyle = "#10b981";
                 ctx.lineWidth = 3.5;
@@ -734,7 +761,6 @@
                 ctx.lineTo(tip.x, tip.y);
                 ctx.stroke();
 
-                // Arrow head
                 ctx.fillStyle = "#10b981";
                 ctx.beginPath();
                 ctx.moveTo(tip.x, tip.y);
@@ -743,14 +769,13 @@
                 ctx.closePath();
                 ctx.fill();
 
-                // Object Label
                 ctx.font = "bold 11px 'JetBrains Mono', monospace";
                 ctx.fillStyle = "#34d399";
                 ctx.textAlign = "center";
                 ctx.fillText("Object", objX, tip.y - 8);
                 ctx.restore();
 
-                // Tracing Canonical Rays
+                // Trace Canonical Rays
                 if (opt.isLens) {
                     // Ray 1: Parallel to axis -> refracted through focus F2
                     const r1_dev = { x: 0, y: tip.y };
@@ -771,7 +796,6 @@
                         drawRay(r1_dev, r1_end, "#38bdf8", 1.8);
                         drawRay(r1_dev, { x: -fMag, y: 0 }, "rgba(56, 189, 248, 0.45)", 1.5, true);
                     } else {
-                        // Plane plate
                         drawRay(r1_dev, { x: rayMax, y: r1_dev.y }, "#38bdf8", 1.8);
                     }
 
@@ -800,12 +824,12 @@
                             drawRay(r1_dev, { x: opt.v, y: -opt.hImg }, "rgba(192, 132, 252, 0.45)", 1.5, true);
                         }
                     } else if (state.device === "convex_mirror") {
-                        const slope1 = (0 - r1_dev.y) / (fMag - 0);
-                        const r1_end = { x: -rayMax, y: r1_dev.y - slope1 * (-rayMax) };
-                        drawRay(r1_dev, r1_end, "#c084fc", 1.8);
-                        drawRay(r1_dev, { x: fMag, y: 0 }, "rgba(192, 132, 252, 0.45)", 1.5, true);
+                        // Fixed Ray 1 Equation: reflects away from virtual focus at +fMag
+                        const slope1 = (r1_dev.y - 0) / (0 - fMag);
+                        const r1_end = { x: -rayMax, y: r1_dev.y + slope1 * (-rayMax) };
+                        drawRay(r1_dev, r1_end, "#f472b6", 1.8);
+                        drawRay(r1_dev, { x: fMag, y: 0 }, "rgba(244, 114, 182, 0.45)", 1.5, true);
                     } else {
-                        // Plane mirror
                         drawRay(r1_dev, { x: -rayMax, y: r1_dev.y }, "#c084fc", 1.8);
                         drawRay(r1_dev, { x: -opt.u, y: tip.y }, "rgba(192, 132, 252, 0.45)", 1.5, true);
                     }
@@ -836,7 +860,6 @@
                     ctx.lineTo(imgX, imgY);
                     ctx.stroke();
 
-                    // Arrowhead
                     ctx.fillStyle = "#38bdf8";
                     const dirArrow = imgY < 0 ? -1 : 1;
                     ctx.beginPath();
@@ -846,7 +869,6 @@
                     ctx.closePath();
                     ctx.fill();
 
-                    // Image Label
                     ctx.font = "bold 11px 'JetBrains Mono', monospace";
                     ctx.fillStyle = "#38bdf8";
                     ctx.textAlign = "center";
