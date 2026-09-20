@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Lenses & Mirrors Ray Optics Laboratory</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -119,15 +119,15 @@
         </div>
     </div>
 
-    <!-- Quick Reset View Button (Floating Right) -->
-    <div class="absolute bottom-48 sm:bottom-44 right-3 sm:right-6 z-20">
+    <!-- Quick Reset View Button (Elevated above bottom deck on mobile) -->
+    <div class="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+175px)] sm:bottom-48 right-3 sm:right-6 z-20">
         <button onclick="resetView()" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-gray-900/90 backdrop-blur-md border border-gray-800 hover:border-gray-700 active:scale-95 text-[10px] sm:text-xs text-gray-300 font-mono shadow-xl transition flex items-center gap-1.5" title="Reset View">
             <span>⌖</span> <span>Reset View</span>
         </button>
     </div>
 
-    <!-- Bottom Controls Deck -->
-    <div class="absolute bottom-2 sm:bottom-4 inset-x-2 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-20 max-w-2xl sm:w-full">
+    <!-- Bottom Controls Deck (Elevated via iOS Safari safe-area inset) -->
+    <div class="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+14px)] sm:bottom-6 inset-x-2 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-20 max-w-2xl sm:w-full">
         <div class="bg-gray-900/95 backdrop-blur-xl border border-gray-800 p-2.5 sm:p-4 rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col gap-2 sm:gap-2.5">
             
             <!-- Object Distance (u) Slider -->
@@ -715,7 +715,7 @@
                             drawRay(atDevice, { x: -fMag, y: 0 }, "#c084fc", 2);
                             drawRay({ x: -fMag, y: 0 }, toPt, "#c084fc", 1.5);
                         } else if (state.device === "convex_mirror") {
-                            // Fixed convex mirror ray: reflects outward away from virtual focus at +fMag
+                            // Ray reflects outward away from virtual focus at +fMag
                             const slope1 = (ry - 0) / (0 - fMag);
                             const toPt = { x: -500, y: ry + slope1 * (-500) };
                             drawRay(atDevice, toPt, "#f472b6", 2);
@@ -824,7 +824,6 @@
                             drawRay(r1_dev, { x: opt.v, y: -opt.hImg }, "rgba(192, 132, 252, 0.45)", 1.5, true);
                         }
                     } else if (state.device === "convex_mirror") {
-                        // Fixed Ray 1 Equation: reflects away from virtual focus at +fMag
                         const slope1 = (r1_dev.y - 0) / (0 - fMag);
                         const r1_end = { x: -rayMax, y: r1_dev.y + slope1 * (-rayMax) };
                         drawRay(r1_dev, r1_end, "#f472b6", 1.8);
