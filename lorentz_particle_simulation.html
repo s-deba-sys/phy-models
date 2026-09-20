@@ -73,23 +73,22 @@
     <!-- WebGL 3D Container -->
     <div id="canvas-container" class="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"></div>
 
-    <!-- Header and Title Overlay -->
-    <div class="absolute top-4 left-4 sm:top-6 sm:left-6 z-10 pointer-events-none max-w-sm sm:max-w-md">
-        <div class="bg-gray-900/80 backdrop-blur-md border border-gray-800 p-4 rounded-2xl shadow-2xl">
-            <div class="flex items-center gap-2 mb-1">
-                <span class="inline-block w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+    <!-- Header Overlay (Top Left) -->
+    <div class="absolute top-4 left-4 sm:top-6 sm:left-6 z-20 max-w-sm sm:max-w-md">
+        <div class="bg-gray-900/85 backdrop-blur-md border border-gray-800 p-4 rounded-2xl shadow-2xl">
+            <div class="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-gray-800">
+               
                 <span class="text-xs font-semibold tracking-wider uppercase text-cyan-400 mono">Lorentz Force Dynamics</span>
             </div>
             <h1 class="text-lg sm:text-xl font-bold tracking-tight text-white mb-1">
                 Charged Particle in Uniform <span class="text-sky-400">B&#8407;</span> Field
             </h1>
-           
         </div>
     </div>
 
     <!-- Legend Overlay (Top Right) -->
     <div class="absolute top-4 right-4 sm:top-6 sm:right-6 z-10 hidden md:block pointer-events-none">
-        <div class="bg-gray-900/80 backdrop-blur-md border border-gray-800 p-3.5 rounded-2xl text-xs space-y-2.5 shadow-2xl">
+        <div class="bg-gray-900/85 backdrop-blur-md border border-gray-800 p-3.5 rounded-2xl text-xs space-y-2.5 shadow-2xl">
             <div class="flex items-center gap-2.5">
                 <span class="w-4 h-1 rounded bg-rose-500 shadow-[0_0_8px_#f43f5e]"></span>
                 <span class="text-gray-300">Actual Trajectory (<span class="mono">q &gt; 0</span>)</span>
@@ -99,7 +98,7 @@
                 <span class="text-gray-300">Ghost Path (Undeflected <span class="mono">v&#8407;&#8320;</span>)</span>
             </div>
             <div class="flex items-center gap-2.5">
-                <span class="w-4 h-1 rounded bg-sky-500 shadow-[0_0_8px_#38bdf8]"></span>
+                <span class="w-4 h-1 rounded bg-sky-400 shadow-[0_0_8px_#38bdf8]"></span>
                 <span class="text-gray-300">Magnetic Field Vectors (<span class="mono">+Z axis</span>)</span>
             </div>
         </div>
@@ -124,7 +123,7 @@
                 <span class="text-xs font-bold text-gray-500 mono">90&deg;</span>
             </div>
 
-            <!-- Quick Preset buttons for the single variable -->
+            <!-- Quick Preset buttons -->
             <div class="flex items-center gap-1.5 w-full sm:w-auto justify-end border-t sm:border-t-0 sm:border-l border-gray-800 pt-2 sm:pt-0 sm:pl-3">
                 <button onclick="setTheta(0)" class="text-[11px] px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-300 font-medium transition">
                     0&deg;
@@ -142,20 +141,22 @@
     <script>
         /* Global simulation state */
         const CONFIG = {
-            vTotal: 25.0, // Total speed |v|
-            omega: 2.5, // Cyclotron frequency: q*B/m
-            ghostLength: 85.0, // Max length of undeflected ghost path
-            trailResolution: 600, // Number of points in trail
-            timeScale: 1.0, // Simulation speed factor
+            vTotal: 25.0,
+            omega: 2.5,
+            ghostLength: 85.0,
+            trailResolution: 600,
+            timeScale: 1.0,
         };
 
-        let thetaDeg = 45.0; // The ONLY controlled variable
+        let thetaDeg = 45.0;
         let simTime = 0.0;
 
         // Three.js Core components
         const container = document.getElementById("canvas-container");
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x030712, 0.007);
+
+        // Removed dense exponential fog that was darkening the entire scene
+        scene.fog = null;
 
         const camera = new THREE.PerspectiveCamera(
             45,
@@ -181,27 +182,27 @@
         controls.minDistance = 10;
         controls.target.set(0, 0, 20);
 
-        // Ambient & Directional Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        // Boosted Lights so objects pop brightly against the deep background
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
         scene.add(ambientLight);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
         dirLight.position.set(30, 50, 20);
         scene.add(dirLight);
 
-        const pointLight = new THREE.PointLight(0xf43f5e, 2, 40);
+        const pointLight = new THREE.PointLight(0xf43f5e, 3.5, 60);
         scene.add(pointLight);
 
-        // Reference Grid & Coordinate System
-        const gridHelper = new THREE.GridHelper(90, 30, 0x1f2937, 0x111827);
+        // Reference Grid
+        const gridHelper = new THREE.GridHelper(90, 30, 0x374151, 0x1f2937);
         gridHelper.position.set(0, -12, 20);
         scene.add(gridHelper);
 
-        // Create 3D arrows depicting uniform B-field pointing along +Z axis
+        // Vibrant 3D arrows depicting uniform B-field pointing along +Z axis
         const bFieldGroup = new THREE.Group();
         const arrowDir = new THREE.Vector3(0, 0, 1).normalize();
         const arrowLength = 9;
-        const arrowColor = 0x0284c7;
+        const arrowColor = 0x38bdf8; // Bright Electric Cyan
 
         for (let x = -16; x <= 16; x += 8) {
             for (let y = -8; y <= 16; y += 8) {
@@ -216,10 +217,11 @@
                         1.2
                     );
                     arrowHelper.line.material.transparent = true;
-                    arrowHelper.line.material.opacity = 0.22;
+                    arrowHelper.line.material.opacity = 0.45;
                     arrowHelper.line.material.fog = false;
+
                     arrowHelper.cone.material.transparent = true;
-                    arrowHelper.cone.material.opacity = 0.2;
+                    arrowHelper.cone.material.opacity = 0.85;
                     arrowHelper.cone.material.fog = false;
                     bFieldGroup.add(arrowHelper);
                 }
@@ -228,16 +230,16 @@
         scene.add(bFieldGroup);
 
         // Origin marker
-        const originGeo = new THREE.SphereGeometry(0.35, 16, 16);
+        const originGeo = new THREE.SphereGeometry(0.4, 16, 16);
         const originMat = new THREE.MeshBasicMaterial({
-            color: 0x64748b,
+            color: 0x94a3b8,
             wireframe: true
         });
         const originMesh = new THREE.Mesh(originGeo, originMat);
         originMesh.position.set(0, 0, 0);
         scene.add(originMesh);
 
-        // 1. Ghost Line for Initial Straight Velocity Path (Undeflected v0)
+        // 1. Ghost Line (Undeflected v0)
         const ghostPointsCount = 80;
         const ghostGeometry = new THREE.BufferGeometry();
         const ghostPositions = new Float32Array(ghostPointsCount * 3);
@@ -245,43 +247,43 @@
 
         const ghostMaterial = new THREE.LineDashedMaterial({
             color: 0xfbbf24,
-            linewidth: 2,
+            linewidth: 2.5,
             scale: 1,
             dashSize: 1.2,
             gapSize: 0.8,
             transparent: true,
-            opacity: 0.85
+            opacity: 0.95
         });
         const ghostLine = new THREE.Line(ghostGeometry, ghostMaterial);
         ghostLine.computeLineDistances();
         scene.add(ghostLine);
 
-        // Ghost path tip indicator arrow
-        const ghostConeGeo = new THREE.ConeGeometry(0.6, 1.8, 16);
+        // Ghost path tip cone
+        const ghostConeGeo = new THREE.ConeGeometry(0.7, 2.0, 16);
         const ghostConeMat = new THREE.MeshBasicMaterial({
             color: 0xfbbf24
         });
         const ghostCone = new THREE.Mesh(ghostConeGeo, ghostConeMat);
         scene.add(ghostCone);
 
-        // 2. Charged Particle (Glowing Sphere)
-        const particleGeometry = new THREE.SphereGeometry(1.0, 32, 32);
+        // 2. Charged Particle (Glowing Bright Neon Red/Pink)
+        const particleGeometry = new THREE.SphereGeometry(1.1, 32, 32);
         const particleMaterial = new THREE.MeshStandardMaterial({
-            color: 0xf43f5e,
-            emissive: 0xf43f5e,
-            emissiveIntensity: 0.7,
-            roughness: 0.2,
-            metalness: 0.5
+            color: 0xff2d55,
+            emissive: 0xff2d55,
+            emissiveIntensity: 1.2,
+            roughness: 0.1,
+            metalness: 0.2
         });
         const particleMesh = new THREE.Mesh(particleGeometry, particleMaterial);
         scene.add(particleMesh);
 
         // Particle Outer Glow Shell
-        const glowGeo = new THREE.SphereGeometry(1.6, 24, 24);
+        const glowGeo = new THREE.SphereGeometry(1.8, 24, 24);
         const glowMat = new THREE.MeshBasicMaterial({
             color: 0xfb7185,
             transparent: true,
-            opacity: 0.25,
+            opacity: 0.45,
             wireframe: true
         });
         const glowMesh = new THREE.Mesh(glowGeo, glowMat);
@@ -298,9 +300,9 @@
 
         const trailMaterial = new THREE.LineBasicMaterial({
             vertexColors: true,
-            linewidth: 2.5,
+            linewidth: 3,
             transparent: true,
-            opacity: 0.95
+            opacity: 1.0
         });
         const trailLine = new THREE.Line(trailGeometry, trailMaterial);
         scene.add(trailLine);
@@ -419,10 +421,11 @@
                     positions[idx + 1] = pt.y;
                     positions[idx + 2] = pt.z;
 
+                    // Vivid color progression: from deep glowing crimson to brilliant hot-pink head
                     const progress = i / count;
-                    colors[idx] = 0.95 * progress + 0.05;
-                    colors[idx + 1] = 0.25 * progress;
-                    colors[idx + 2] = 0.38 * progress + 0.1;
+                    colors[idx] = 0.85 * progress + 0.15;
+                    colors[idx + 1] = 0.35 * progress;
+                    colors[idx + 2] = 0.55 * progress + 0.1;
                 } else if (count > 0) {
                     const last = trailHistory[0];
                     positions[idx] = last.x;
@@ -437,7 +440,7 @@
             trailGeometry.attributes.color.needsUpdate = true;
             trailGeometry.setDrawRange(0, count);
 
-            const pulse = 1.0 + Math.sin(now * 0.006) * 0.2;
+            const pulse = 1.0 + Math.sin(now * 0.006) * 0.25;
             glowMesh.scale.set(pulse, pulse, pulse);
 
             controls.update();
