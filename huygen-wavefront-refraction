@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Huygens' Principle - Wavefront Refraction</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow: hidden;
+            background-color: #030712;
+            color: #f3f4f6;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+        }
+
+        input[type=range]:focus {
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #1f2937;
+            border-radius: 9999px;
+            border: 1px solid #374151;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.7), 0 0 0 2px #0f172a;
+            transition: transform 0.15s ease, background-color 0.15s ease;
+        }
+
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            background: #7dd3fc;
+        }
+    </style>
+</head>
+
+<body class="relative w-screen h-screen m-0 p-0 overflow-hidden bg-gray-950">
+
+    <!-- Interactive Canvas -->
+    <canvas id="huygens-canvas" class="absolute inset-0 w-full h-full cursor-crosshair"></canvas>
+
+    <!-- Header Overlay (Top Left) -->
+    <div class="absolute top-4 left-4 sm:top-5 sm:left-6 z-10 pointer-events-none max-w-xs sm:max-w-md">
+        <div class="bg-gray-900/85 backdrop-blur-md border border-gray-800 p-4 rounded-2xl shadow-2xl">
+            <div class="flex items-center gap-2 mb-1">
+                <span class="inline-block w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                <span class="text-xs font-semibold tracking-wider uppercase text-cyan-400 mono">Wave Optics</span>
+            </div>
+            <h1 class="text-lg sm:text-xl font-bold tracking-tight text-white mb-1">
+                Huygens' Principle: <span class="text-sky-400">Refraction</span>
+            </h1>
+            <p class="text-xs text-gray-400 leading-relaxed">
+                Watch the incident wavefront edge $B' \to C$ in Medium 1 while secondary wavelets expand slower ($v_2 = v_1 / n$) in Medium 2.
+            </p>
+        </div>
+    </div>
+
+    <!-- Mathematical Telemetry HUD (Top Right, Compact) -->
+    <div class="absolute top-4 right-4 sm:top-5 sm:right-6 z-20 pointer-events-none">
+        <div class="bg-gray-900/90 backdrop-blur-md border border-gray-800/90 p-2.5 rounded-xl shadow-2xl mono text-[9px] sm:text-[10px] space-y-1 w-44 sm:w-48">
+            <div class="flex justify-between items-center text-gray-400 pb-1 border-b border-gray-800">
+                <span>Snell's Law:</span>
+                <span class="text-cyan-400 font-bold">sin i / sin r = n₂</span>
+            </div>
+            <div class="flex justify-between text-gray-300">
+                <span class="text-gray-400">Incident (i):</span>
+                <span id="hud-i" class="text-emerald-400 font-semibold">45.00°</span>
+            </div>
+            <div class="flex justify-between text-gray-300">
+                <span class="text-gray-400">Refracted (r):</span>
+                <span id="hud-r" class="text-cyan-400 font-semibold">28.13°</span>
+            </div>
+            <div class="flex justify-between text-gray-300">
+                <span class="text-gray-400">Speed (v₁):</span>
+                <span id="hud-v1" class="text-emerald-300 font-semibold">1.00 c</span>
+            </div>
+            <div class="flex justify-between text-gray-300">
+                <span class="text-gray-400">Speed (v₂):</span>
+                <span id="hud-v2" class="text-sky-300 font-semibold">0.67 c</span>
+            </div>
+            <div class="flex justify-between text-gray-300">
+                <span class="text-gray-400">Index (n₂):</span>
+                <span id="hud-n" class="text-amber-400 font-semibold">1.500</span>
+            </div>
+            <div class="flex justify-between text-gray-300 pt-1 border-t border-gray-800 font-bold">
+                <span class="text-purple-400">Radius Ratio:</span>
+                <span id="hud-ratio" class="text-purple-300">0.67</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Bottom Deck -->
+    <div class="absolute bottom-4 inset-x-3 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-20 max-w-3xl sm:w-full">
+        <div class="bg-gray-900/95 backdrop-blur-xl border border-gray-800 p-4 sm:p-5 rounded-3xl shadow-2xl flex flex-col gap-3">
+            
+            <!-- Row 1: Play/Pause, Reset & Scrubber -->
+            <div class="flex items-center gap-3">
+                <button id="btn-play" onclick="togglePlay()" class="px-3.5 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white font-semibold text-xs transition flex items-center gap-1.5 min-w-[76px] justify-center">
+                    <span id="play-icon">❚❚</span> Pause
+                </button>
+                <button onclick="resetSimulation()" class="px-2.5 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-300 text-xs transition">
+                    ↺ Reset
+                </button>
+                <div class="w-full flex items-center gap-2">
+                    <span class="text-[10px] mono text-gray-400">Cycle</span>
+                    <input id="time-slider" type="range" min="0" max="1" step="0.001" value="0.5" class="w-full" aria-label="Cycle Progress" />
+                </div>
+            </div>
+
+            <!-- Row 2: Animation Speed Slider -->
+            <div class="flex items-center gap-3 border-t border-gray-800/80 pt-2.5">
+                <div class="flex items-center justify-between w-36 gap-2">
+                    <span class="text-xs uppercase font-bold tracking-wider text-gray-300 whitespace-nowrap">Sim Speed</span>
+                    <span id="speed-badge" class="mono text-xs px-2 py-0.5 bg-gray-800 border border-gray-700 rounded text-cyan-300 min-w-[48px] text-center font-bold">0.4x</span>
+                </div>
+                <span class="text-[11px] font-bold text-gray-500 mono">0.1x</span>
+                <input id="speed-slider" type="range" min="0.05" max="1.0" step="0.05" value="0.4" class="w-full" aria-label="Simulation Speed" />
+                <span class="text-[11px] font-bold text-gray-500 mono">1.0x</span>
+            </div>
+
+            <!-- Row 3: Incidence Angle (i) -->
+            <div class="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 border-t border-gray-800/80 pt-2.5">
+                <div class="flex items-center justify-between w-full sm:w-44 gap-2">
+                    <label for="i-slider" class="text-xs uppercase font-bold tracking-wider text-gray-300 whitespace-nowrap">
+                        Incident &ang; (i)
+                    </label>
+                    <span id="i-badge" class="mono text-xs px-2.5 py-0.5 bg-emerald-950 text-emerald-300 border border-emerald-700/60 rounded-xl font-bold min-w-[56px] text-center">
+                        45.0&deg;
+                    </span>
+                </div>
+                <div class="w-full flex items-center gap-2">
+                    <span class="text-[11px] font-bold text-gray-500 mono">5&deg;</span>
+                    <input id="i-slider" type="range" min="5" max="75" step="0.5" value="45" class="w-full" aria-label="Incident angle" />
+                    <span class="text-[11px] font-bold text-gray-500 mono">75&deg;</span>
+                </div>
+                <div class="flex items-center gap-1 w-full sm:w-auto justify-end">
+                    <button onclick="setAngle(30)" class="text-[11px] px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-300 font-medium transition">30&deg;</button>
+                    <button onclick="setAngle(45)" class="text-[11px] px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-300 font-medium transition">45&deg;</button>
+                    <button onclick="setAngle(60)" class="text-[11px] px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-300 font-medium transition">60&deg;</button>
+                </div>
+            </div>
+
+            <!-- Row 4: Refractive Index (n2) -->
+            <div class="flex items-center gap-3 border-t border-gray-800/80 pt-2.5">
+                <div class="flex items-center justify-between w-36 gap-2">
+                    <label for="n-slider" class="text-xs uppercase font-bold tracking-wider text-gray-300 whitespace-nowrap">
+                        Index (n₂)
+                    </label>
+                    <span id="n-badge" class="mono text-xs px-2 py-0.5 bg-sky-950 text-sky-300 border border-sky-700/60 rounded-lg font-bold min-w-[48px] text-center">
+                        1.50
+                    </span>
+                </div>
+                <input id="n-slider" type="range" min="1.00" max="2.40" step="0.01" value="1.50" class="w-full" aria-label="Refractive index n2" />
+                <div class="flex items-center gap-1">
+                    <button onclick="setIndex(1.33)" class="text-[10px] px-1.5 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 transition">H₂O</button>
+                    <button onclick="setIndex(1.50)" class="text-[10px] px-1.5 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 transition">Glass</button>
+                    <button onclick="setIndex(2.00)" class="text-[10px] px-1.5 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 transition">High-n</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("huygens-canvas");
+        const ctx = canvas.getContext("2d");
+
+        // Simulation parameters
+        const state = {
+            angleDeg: 45.0,
+            n1: 1.00,
+            n2: 1.50,
+            simTime: 0.0,         // Absolute continuous time
+            cyclePhase: 0.5,      // [0, 1] relative to current interval
+            isPlaying: true,
+            simSpeed: 0.4,        // Speed multiplier (gentle, easy to follow)
+            waveletCount: 9,      // Clean number of secondary wavelets
+            interDistance: 260    // Distance AC between first and last contact points
+        };
+
+        const iSlider = document.getElementById("i-slider");
+        const iBadge = document.getElementById("i-badge");
+        const nSlider = document.getElementById("n-slider");
+        const nBadge = document.getElementById("n-badge");
+        const speedSlider = document.getElementById("speed-slider");
+        const speedBadge = document.getElementById("speed-badge");
+        const timeSlider = document.getElementById("time-slider");
+        const btnPlay = document.getElementById("btn-play");
+        const playIcon = document.getElementById("play-icon");
+
+        const hudI = document.getElementById("hud-i");
+        const hudR = document.getElementById("hud-r");
+        const hudV1 = document.getElementById("hud-v1");
+        const hudV2 = document.getElementById("hud-v2");
+        const hudN = document.getElementById("hud-n");
+        const hudRatio = document.getElementById("hud-ratio");
+
+        function resizeCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        window.addEventListener("resize", resizeCanvas);
+        resizeCanvas();
+
+        function togglePlay() {
+            state.isPlaying = !state.isPlaying;
+            playIcon.textContent = state.isPlaying ? "❚❚" : "▶";
+            btnPlay.innerHTML = `<span id="play-icon">${state.isPlaying ? "❚❚" : "▶"}</span> ${state.isPlaying ? "Pause" : "Play"}`;
+        }
+
+        function resetSimulation() {
+            state.cyclePhase = 0.0;
+            timeSlider.value = 0.0;
+        }
+
+        function setAngle(deg) {
+            state.angleDeg = deg;
+            iSlider.value = deg;
+            updateHUD();
+        }
+
+        function setIndex(n) {
+            state.n2 = n;
+            nSlider.value = n;
+            updateHUD();
+        }
+
+        iSlider.addEventListener("input", (e) => {
+            state.angleDeg = parseFloat(e.target.value);
+            updateHUD();
+        });
+
+        nSlider.addEventListener("input", (e) => {
+            state.n2 = parseFloat(e.target.value);
+            updateHUD();
+        });
+
+        speedSlider.addEventListener("input", (e) => {
+            state.simSpeed = parseFloat(e.target.value);
+            speedBadge.textContent = state.simSpeed.toFixed(1) + "x";
+        });
+
+        timeSlider.addEventListener("input", (e) => {
+            state.cyclePhase = parseFloat(e.target.value);
+            state.isPlaying = false;
+            playIcon.textContent = "▶";
+            btnPlay.innerHTML = `<span id="play-icon">▶</span> Play`;
+        });
+
+        function updateHUD() {
+            iBadge.textContent = state.angleDeg.toFixed(1) + "°";
+            nBadge.textContent = state.n2.toFixed(2);
+
+            const iRad = (state.angleDeg * Math.PI) / 180.0;
+            const sinR = (state.n1 / state.n2) * Math.sin(iRad);
+            const rRad = Math.asin(Math.min(1.0, sinR));
+            const rDeg = (rRad * 180.0) / Math.PI;
+
+            hudI.textContent = state.angleDeg.toFixed(2) + "°";
+            hudR.textContent = rDeg.toFixed(2) + "°";
+            hudV1.textContent = "1.00 c";
+            hudV2.textContent = (1.0 / state.n2).toFixed(2) + " c";
+            hudN.textContent = state.n2.toFixed(3);
+            hudRatio.textContent = (1.0 / state.n2).toFixed(2);
+        }
+
+        let lastTime = performance.now();
+
+        function render(now) {
+            const dt = Math.min((now - lastTime) / 1000, 0.1);
+            lastTime = now;
+
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            ctx.clearRect(0, 0, w, h);
+
+            // Baseline layout
+            const interfaceY = h * 0.44;
+            const AC = Math.min(state.interDistance, w * 0.35); // Base distance on surface
+            const ptA = { x: w * 0.38 - AC / 2, y: interfaceY };
+            const ptC = { x: ptA.x + AC, y: interfaceY };
+
+            // Optical geometry
+            const iRad = (state.angleDeg * Math.PI) / 180.0;
+            const sinR = (state.n1 / state.n2) * Math.sin(iRad);
+            const rRad = Math.asin(Math.min(1.0, sinR));
+
+            // In Medium 1: Ray direction (sin i, cos i), Wavefront normal direction
+            const rayDir1 = { x: Math.sin(iRad), y: Math.cos(iRad) };
+            // Incident wavefront orientation tangent (perpendicular to ray)
+            const wfTan1 = { x: Math.cos(iRad), y: -Math.sin(iRad) };
+
+            // In Medium 2: Ray direction (sin r, cos r)
+            const rayDir2 = { x: Math.sin(rRad), y: Math.cos(rRad) };
+            const wfTan2 = { x: Math.cos(rRad), y: -Math.sin(rRad) };
+
+            // Distance in Medium 1 that ray from initial wavefront at B' travels to reach C:
+            // BC = AC * sin(i)
+            const BC = AC * Math.sin(iRad);
+            // By Snell's / Huygens definition: AD = BC / n2 = AC * sin(r)
+            const AD = BC / state.n2;
+
+            // Travel speed (pixels per second)
+            const v1 = 120 * state.simSpeed;
+            const v2 = v1 / state.n2;
+
+            // Total cycle duration (from approaching until wavefront cleared past C)
+            const travelDuration = BC / v1;
+            const totalCycleTime = travelDuration * 2.2; // includes entry and exit
+
+            if (state.isPlaying) {
+                state.cyclePhase += dt / totalCycleTime;
+                if (state.cyclePhase > 1.0) state.cyclePhase = 0.0;
+                timeSlider.value = state.cyclePhase;
+            }
+
+            // Time offset: when cyclePhase = 0.25, wavefront touches A.
+            // When cyclePhase = 0.25 + (travelDuration / totalCycleTime), wavefront touches C.
+            const tContactA = 0.20;
+            const tauFraction = travelDuration / totalCycleTime;
+            const tContactC = tContactA + tauFraction;
+
+            // Current progress time relative to touchdown at A
+            const currentSimTime = (state.cyclePhase - tContactA) * totalCycleTime;
+
+            // 1. Medium 2 Background Fill (Glass/Denser medium)
+            ctx.fillStyle = "rgba(14, 116, 144, 0.12)";
+            ctx.fillRect(0, interfaceY, w, h - interfaceY);
+
+            // Interface Line
+            ctx.strokeStyle = "rgba(56, 189, 248, 0.8)";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, interfaceY);
+            ctx.lineTo(w, interfaceY);
+            ctx.stroke();
+
+            // Medium text labels
+            ctx.font = "bold 12px 'JetBrains Mono', monospace";
+            ctx.fillStyle = "rgba(148, 163, 184, 0.5)";
+            ctx.fillText(`Medium 1 (Air: n₁ = 1.00, speed = v₁)`, 24, interfaceY - 16);
+            ctx.fillText(`Medium 2 (Glass: n₂ = ${state.n2.toFixed(2)}, speed = v₂ = v₁/${state.n2.toFixed(2)})`, 24, interfaceY + 28);
+
+            // 2. Normals at A and C
+            ctx.save();
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = "rgba(156, 163, 175, 0.4)";
+            ctx.lineWidth = 1.2;
+            [ptA, ptC].forEach(pt => {
+                ctx.beginPath();
+                ctx.moveTo(pt.x, pt.y - 140);
+                ctx.lineTo(pt.x, pt.y + 150);
+                ctx.stroke();
+            });
+            ctx.restore();
+
+            // 3. Rays bounding the beam (Ray entering A, Ray entering C)
+            const rayLengthAbove = 220;
+            const rayLengthBelow = 220;
+
+            // Ray passing through A
+            const rayA_start = { x: ptA.x - rayDir1.x * rayLengthAbove, y: ptA.y - rayDir1.y * rayLengthAbove };
+            const rayA_end = { x: ptA.x + rayDir2.x * rayLengthBelow, y: ptA.y + rayDir2.y * rayLengthBelow };
+
+            // Ray passing through C
+            const rayC_start = { x: ptC.x - rayDir1.x * rayLengthAbove, y: ptC.y - rayDir1.y * rayLengthAbove };
+            const rayC_end = { x: ptC.x + rayDir2.x * rayLengthBelow, y: ptC.y + rayDir2.y * rayLengthBelow };
+
+            ctx.save();
+            ctx.strokeStyle = "rgba(52, 211, 153, 0.4)";
+            ctx.lineWidth = 1.5;
+            // Ray 1 (through A)
+            ctx.beginPath();
+            ctx.moveTo(rayA_start.x, rayA_start.y);
+            ctx.lineTo(ptA.x, ptA.y);
+            ctx.stroke();
+
+            // Ray 2 (through C)
+            ctx.beginPath();
+            ctx.moveTo(rayC_start.x, rayC_start.y);
+            ctx.lineTo(ptC.x, ptC.y);
+            ctx.stroke();
+
+            // Refracted rays inside Medium 2
+            ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
+            ctx.beginPath();
+            ctx.moveTo(ptA.x, ptA.y);
+            ctx.lineTo(rayA_end.x, rayA_end.y);
+            ctx.moveTo(ptC.x, ptC.y);
+            ctx.lineTo(rayC_end.x, rayC_end.y);
+            ctx.stroke();
+            ctx.restore();
+
+            // 4. Incident Planar Wavefront (Moving down-right in Medium 1)
+            // Distance traveled by this wavefront from touchdown at A
+            const dist1 = currentSimTime * v1;
+
+            // The incident wavefront line equation: normal to rayDir1.
+            // At time = 0, this wavefront passes exactly through ptA.
+            // At any time, its anchor on the ray through A is:
+            const wfCenterA = {
+                x: ptA.x + rayDir1.x * dist1,
+                y: ptA.y + rayDir1.y * dist1
+            };
+
+            // Half width of visual wavefront
+            const beamHalfWidth = AC * 0.7;
+
+            // Only draw incident wavefront if still partially in Medium 1
+            if (dist1 <= BC + 20) {
+                ctx.save();
+                ctx.strokeStyle = "#34d399";
+                ctx.lineWidth = 3;
+                ctx.shadowColor = "#10b981";
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+                ctx.moveTo(wfCenterA.x - wfTan1.x * (beamHalfWidth * 0.4), wfCenterA.y - wfTan1.y * (beamHalfWidth * 0.4));
+                ctx.lineTo(wfCenterA.x + wfTan1.x * (beamHalfWidth * 1.4), wfCenterA.y + wfTan1.y * (beamHalfWidth * 1.4));
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // 5. Huygens Secondary Wavelet Sources along surface AC
+            const N = state.waveletCount;
+            let activeTangents = [];
+
+            for (let k = 0; k < N; k++) {
+                const fraction = k / (N - 1);
+                const sourceX = ptA.x + fraction * AC;
+                const source = { x: sourceX, y: interfaceY };
+
+                // Time when the incident wavefront touches this specific point on interface:
+                // distance along ray = fraction * AC * sin(i)
+                const touchTime = (fraction * BC) / v1;
+                const activeTime = currentSimTime - touchTime;
+
+                // Node point indicator
+                const isActivated = activeTime >= 0;
+                ctx.fillStyle = isActivated ? "#38bdf8" : "rgba(100, 116, 139, 0.4)";
+                ctx.beginPath();
+                ctx.arc(source.x, source.y, isActivated ? 3.5 : 2.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (activeTime > 0) {
+                    // Radius in Medium 2: r = v2 * activeTime
+                    const radius = v2 * activeTime;
+
+                    // Draw secondary hemispherical wavelet expanding into Medium 2
+                    ctx.save();
+                    ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
+                    ctx.lineWidth = 1.3;
+                    ctx.beginPath();
+                    // Arc in lower half (0 to PI)
+                    ctx.arc(source.x, source.y, radius, 0, Math.PI, false);
+                    ctx.stroke();
+                    ctx.restore();
+
+                    // If this is point A (k = 0), mark its key radius for the textbook proof
+                    if (k === 0 && currentSimTime <= travelDuration * 1.6) {
+                        ctx.save();
+                        ctx.setLineDash([3, 3]);
+                        ctx.strokeStyle = "#a855f7"; // Purple dimension indicator
+                        ctx.lineWidth = 1.5;
+
+                        // Vector to tangent point D: direction is rayDir2
+                        const ptD = {
+                            x: ptA.x + rayDir2.x * radius,
+                            y: ptA.y + rayDir2.y * radius
+                        };
+
+                        ctx.beginPath();
+                        ctx.moveTo(ptA.x, ptA.y);
+                        ctx.lineTo(ptD.x, ptD.y);
+                        ctx.stroke();
+
+                        ctx.fillStyle = "#c084fc";
+                        ctx.font = "bold 10px 'JetBrains Mono', monospace";
+                        ctx.fillText(`rA = v₂·t`, (ptA.x + ptD.x) / 2 - 40, (ptA.y + ptD.y) / 2);
+                        ctx.restore();
+                    }
+                }
+            }
+
+            // 6. Refracted Wavefront Envelope (Common Tangent in Medium 2)
+            // The envelope exists once the wavefront begins penetrating past A (currentSimTime > 0)
+            if (currentSimTime > 0) {
+                // Point D is on the circle of A: distance = v2 * currentSimTime
+                const currentRadiusA = v2 * currentSimTime;
+
+                // Point on surface where wavefront currently contacts interface:
+                // contactX = ptA.x + currentSimTime * (v1 / sin i)
+                const currentContactDist = (currentSimTime * v1) / Math.sin(iRad);
+                const currentContactX = Math.min(ptC.x, ptA.x + currentContactDist);
+
+                // Tangent origin on ray through A:
+                const refCenterA = {
+                    x: ptA.x + rayDir2.x * currentRadiusA,
+                    y: ptA.y + rayDir2.y * currentRadiusA
+                };
+
+                ctx.save();
+                ctx.strokeStyle = "#38bdf8";
+                ctx.lineWidth = 3;
+                ctx.shadowColor = "#0284c7";
+                ctx.shadowBlur = 12;
+
+                ctx.beginPath();
+                ctx.moveTo(refCenterA.x - wfTan2.x * (beamHalfWidth * 0.4), refCenterA.y - wfTan2.y * (beamHalfWidth * 0.4));
+                ctx.lineTo(refCenterA.x + wfTan2.x * (beamHalfWidth * 1.4), refCenterA.y + wfTan2.y * (beamHalfWidth * 1.4));
+                ctx.stroke();
+                ctx.restore();
+
+                // Common tangent label
+                ctx.fillStyle = "#38bdf8";
+                ctx.font = "bold 11px 'JetBrains Mono', monospace";
+                ctx.fillText("Refracted Wavefront (Envelope)", refCenterA.x + wfTan2.x * (beamHalfWidth * 0.8) + 8, refCenterA.y + wfTan2.y * (beamHalfWidth * 0.8) + 16);
+            }
+
+            // 7. Textbook Point Markers (A and C)
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 13px 'JetBrains Mono', monospace";
+            ctx.fillText("A", ptA.x - 14, ptA.y - 10);
+            ctx.fillText("C", ptC.x + 8, ptC.y - 10);
+
+            // Angle arc indicators at A and C
+            ctx.save();
+            ctx.strokeStyle = "#34d399";
+            ctx.lineWidth = 1.5;
+            // Angle i at A: from upward normal (-PI/2) to incident ray coming in (-PI/2 - iRad)
+            ctx.beginPath();
+            ctx.arc(ptA.x, ptA.y, 28, -Math.PI / 2 - iRad, -Math.PI / 2);
+            ctx.stroke();
+            ctx.fillStyle = "#34d399";
+            ctx.font = "11px 'JetBrains Mono', monospace";
+            ctx.fillText("i", ptA.x - 18, ptA.y - 34);
+
+            // Angle r at A: from downward normal (+PI/2) to refracted ray (+PI/2 - rRad)
+            ctx.strokeStyle = "#38bdf8";
+            ctx.beginPath();
+            ctx.arc(ptA.x, ptA.y, 32, Math.PI / 2 - rRad, Math.PI / 2);
+            ctx.stroke();
+            ctx.fillStyle = "#38bdf8";
+            ctx.fillText("r", ptA.x + 10, ptA.y + 44);
+            ctx.restore();
+
+            requestAnimationFrame(render);
+        }
+
+        updateHUD();
+        requestAnimationFrame(render);
+    </script>
+</body>
+
+</html>
