@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Lenses & Mirrors Ray Optics Laboratory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow: hidden;
+            background-color: #030712;
+            color: #f3f4f6;
+            touch-action: none;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+        }
+
+        input[type=range]:focus {
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #1f2937;
+            border-radius: 9999px;
+            border: 1px solid #374151;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.7), 0 0 0 2px #0f172a;
+        }
+    </style>
+</head>
+
+<body class="relative w-screen h-screen m-0 p-0 overflow-hidden bg-gray-950">
+
+    <!-- Interactive Ray Canvas -->
+    <canvas id="optics-canvas" class="absolute inset-0 w-full h-full cursor-crosshair"></canvas>
+
+    <!-- Header Overlay (Top Left) -->
+    <div class="absolute top-3 left-3 sm:top-5 sm:left-6 z-20 max-w-[260px] sm:max-w-md">
+        <div class="bg-gray-900/90 backdrop-blur-md border border-gray-800 p-3 sm:p-4 rounded-2xl shadow-2xl">
+            <div class="flex items-center justify-between gap-2 mb-1.5 pb-1.5 border-b border-gray-800">
+                <a href="./index.html" class="inline-flex items-center gap-1 text-[11px] sm:text-xs font-semibold text-gray-300 hover:text-cyan-400 active:scale-95 transition pointer-events-auto">
+                    <span>&larr;</span> <span>All Hub Sims</span>
+                </a>
+                <button onclick="openModal()" class="text-[10px] px-2 py-0.5 rounded-lg bg-cyan-950 border border-cyan-700/60 text-cyan-300 font-bold hover:bg-cyan-900 active:scale-95 pointer-events-auto transition">
+                    Change Device
+                </button>
+            </div>
+            <div class="flex items-center gap-1.5 mb-0.5">
+                <span id="device-dot" class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span id="device-badge" class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-emerald-400 mono">Convex Lens</span>
+            </div>
+            <h1 id="device-title" class="text-xs sm:text-base font-bold text-white tracking-tight leading-tight">
+                Converging Lens System
+            </h1>
+            <p class="text-[10px] sm:text-xs text-gray-400 mt-0.5 leading-snug">
+                Drag arrow tip or use presets. Pinch / scroll to zoom.
+            </p>
+        </div>
+    </div>
+
+    <!-- Mathematical Telemetry HUD (Top Right, Collapsible) -->
+    <div class="absolute top-3 right-3 sm:top-5 sm:right-6 z-20 pointer-events-none">
+        <div class="bg-gray-900/90 backdrop-blur-md border border-gray-800/90 rounded-xl sm:rounded-2xl shadow-2xl mono text-[10px] sm:text-[11px] w-40 sm:w-56 overflow-hidden">
+            <div class="flex justify-between items-center text-gray-400 p-2 sm:p-2.5 pb-1.5 border-b border-gray-800 pointer-events-auto">
+                <span class="text-[9px] sm:text-[10px] font-bold text-cyan-400 uppercase tracking-wider">Metrics</span>
+                <button id="hud-toggle" onclick="toggleHud()" class="text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 w-4 h-4 sm:w-5 sm:h-5 rounded flex items-center justify-center font-bold text-xs leading-none transition cursor-pointer">&minus;</button>
+            </div>
+            <div id="hud-body" class="p-2 sm:p-2.5 pt-1.5 space-y-1">
+                <div class="flex justify-between text-gray-300">
+                    <span class="text-gray-400">Object (u):</span>
+                    <span id="hud-u" class="text-emerald-400 font-semibold">-240 px</span>
+                </div>
+                <div class="flex justify-between text-gray-300">
+                    <span class="text-gray-400">Image (v):</span>
+                    <span id="hud-v" class="text-sky-300 font-semibold">+240 px</span>
+                </div>
+                <div class="flex justify-between text-gray-300">
+                    <span class="text-gray-400">Focal (f):</span>
+                    <span id="hud-f" class="text-purple-300 font-semibold">+120 px</span>
+                </div>
+                <div class="flex justify-between text-gray-300">
+                    <span class="text-gray-400">Magnif. (m):</span>
+                    <span id="hud-m" class="text-amber-300 font-semibold">-1.00x</span>
+                </div>
+                <div class="flex justify-between text-gray-300 pt-1 border-t border-gray-800 font-bold">
+                    <span id="hud-nature" class="text-emerald-400 text-[9px] sm:text-[10px]">Real &amp; Inverted</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Reset View Button (Floating Right) -->
+    <div class="absolute bottom-48 sm:bottom-44 right-3 sm:right-6 z-20">
+        <button onclick="resetView()" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-gray-900/90 backdrop-blur-md border border-gray-800 hover:border-gray-700 active:scale-95 text-[10px] sm:text-xs text-gray-300 font-mono shadow-xl transition flex items-center gap-1.5" title="Reset View">
+            <span>⌖</span> <span>Reset View</span>
+        </button>
+    </div>
+
+    <!-- Bottom Controls Deck -->
+    <div class="absolute bottom-2 sm:bottom-4 inset-x-2 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-20 max-w-2xl sm:w-full">
+        <div class="bg-gray-900/95 backdrop-blur-xl border border-gray-800 p-2.5 sm:p-4 rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col gap-2 sm:gap-2.5">
+            
+            <!-- Object Distance (u) Slider -->
+            <div class="flex items-center gap-2">
+                <span class="text-[10px] sm:text-xs uppercase font-bold text-gray-300 w-20 sm:w-24 whitespace-nowrap">Dist (u)</span>
+                <input id="u-slider" type="range" min="-500" max="-20" step="1" value="-240" class="w-full" aria-label="Object Distance" />
+                <span id="u-badge" class="mono text-[10px] sm:text-xs px-2 py-0.5 bg-emerald-950 text-emerald-300 border border-emerald-700/60 rounded-lg font-bold min-w-[54px] text-center">-240</span>
+            </div>
+
+            <!-- Focal Length (f) Slider -->
+            <div id="focal-row" class="flex items-center gap-2">
+                <span class="text-[10px] sm:text-xs uppercase font-bold text-gray-300 w-20 sm:w-24 whitespace-nowrap">Focal (f)</span>
+                <input id="f-slider" type="range" min="60" max="220" step="2" value="120" class="w-full" aria-label="Focal Length" />
+                <span id="f-badge" class="mono text-[10px] sm:text-xs px-2 py-0.5 bg-purple-950 text-purple-300 border border-purple-700/60 rounded-lg font-bold min-w-[54px] text-center">120px</span>
+            </div>
+
+            <!-- Position Presets (Includes at Infinity) -->
+            <div class="flex items-center justify-between gap-1 pt-1.5 border-t border-gray-800/80 flex-wrap">
+                <span class="text-[9px] sm:text-[10px] uppercase font-semibold text-gray-500 mr-1">Presets:</span>
+                <div class="flex items-center gap-1 flex-wrap">
+                    <button onclick="setInfinity()" id="btn-inf" class="text-[9px] sm:text-[11px] px-2 py-0.5 sm:py-1 rounded bg-amber-950/70 border border-amber-700/60 text-amber-300 font-bold active:scale-95 transition">
+                        At &infin;
+                    </button>
+                    <button onclick="setPreset('beyond2f')" class="text-[9px] sm:text-[11px] px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 active:scale-95 transition">&gt; 2F</button>
+                    <button onclick="setPreset('at2f')" class="text-[9px] sm:text-[11px] px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-gray-800 hover:bg-gray-700 text-cyan-300 active:scale-95 transition">At 2F (C)</button>
+                    <button onclick="setPreset('between')" class="text-[9px] sm:text-[11px] px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 active:scale-95 transition">F-2F</button>
+                    <button onclick="setPreset('atf')" class="text-[9px] sm:text-[11px] px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-gray-800 hover:bg-gray-700 text-rose-300 active:scale-95 transition">At F</button>
+                    <button onclick="setPreset('underf')" class="text-[9px] sm:text-[11px] px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-gray-800 hover:bg-gray-700 text-emerald-300 active:scale-95 transition">&lt; F</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Device Selector (Landing / Switcher) -->
+    <div id="device-modal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md transition-opacity duration-200">
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-6 shadow-2xl">
+            <h2 class="text-base sm:text-xl font-bold text-white mb-1 flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span> Select Optical Instrument
+            </h2>
+            <p class="text-[11px] sm:text-xs text-gray-400 mb-4 leading-relaxed">
+                Choose a refracting lens or reflecting mirror to examine ray tracing, virtual projections, and infinite object behaviour.
+            </p>
+
+            <!-- Lenses Group -->
+            <div class="mb-3.5">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-cyan-400 mono">Refracting Lenses</span>
+                <div class="grid grid-cols-3 gap-2 mt-1.5">
+                    <button onclick="selectDevice('convex_lens')" class="p-2 sm:p-2.5 rounded-xl bg-gray-800/80 hover:bg-cyan-950/60 border border-gray-700 hover:border-cyan-500 text-left transition active:scale-95">
+                        <div class="text-xs sm:text-sm font-bold text-white">Convex</div>
+                        <div class="text-[9px] sm:text-[10px] text-gray-400">Converging (+f)</div>
+                    </button>
+                    <button onclick="selectDevice('concave_lens')" class="p-2 sm:p-2.5 rounded-xl bg-gray-800/80 hover:bg-cyan-950/60 border border-gray-700 hover:border-cyan-500 text-left transition active:scale-95">
+                        <div class="text-xs sm:text-sm font-bold text-white">Concave</div>
+                        <div class="text-[9px] sm:text-[10px] text-gray-400">Diverging (-f)</div>
+                    </button>
+                    <button onclick="selectDevice('plane_glass')" class="p-2 sm:p-2.5 rounded-xl bg-gray-800/80 hover:bg-cyan-950/60 border border-gray-700 hover:border-cyan-500 text-left transition active:scale-95">
+                        <div class="text-xs sm:text-sm font-bold text-white">Plane Plate</div>
+                        <div class="text-[9px] sm:text-[10px] text-gray-400">Zero Power</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mirrors Group -->
+            <div class="mb-4">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-purple-400 mono">Reflecting Mirrors</span>
+                <div class="grid grid-cols-3 gap-2 mt-1.5">
+                    <button onclick="selectDevice('concave_mirror')" class="p-2 sm:p-2.5 rounded-xl bg-gray-800/80 hover:bg-purple-950/60 border border-gray-700 hover:border-purple-500 text-left transition active:scale-95">
+                        <div class="text-xs sm:text-sm font-bold text-white">Concave</div>
+                        <div class="text-[9px] sm:text-[10px] text-gray-400">Converging (-f)</div>
+                    </button>
+                    <button onclick="selectDevice('convex_mirror')" class="p-2 sm:p-2.5 rounded-xl bg-gray-800/80 hover:bg-purple-950/60 border border-gray-700 hover:border-purple-500 text-left transition active:scale-95">
+                        <div class="text-xs sm:text-sm font-bold text-white">Convex</div>
+                        <div class="text-[9px] sm:text-[10px] text-gray-400">Diverging (+f)</div>
+                    </button>
+                    <button onclick="selectDevice('plane_mirror')" class="p-2 sm:p-2.5 rounded-xl bg-gray-800/80 hover:bg-purple-950/60 border border-gray-700 hover:border-purple-500 text-left transition active:scale-95">
+                        <div class="text-xs sm:text-sm font-bold text-white">Plane</div>
+                        <div class="text-[9px] sm:text-[10px] text-gray-400">Virtual (m = +1)</div>
+                    </button>
+                </div>
+            </div>
+
+            <button onclick="closeModal()" class="w-full py-2 bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-300 rounded-xl transition active:scale-95">
+                Resume Current
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("optics-canvas");
+        const ctx = canvas.getContext("2d");
+
+        // Simulation State
+        const state = {
+            device: "convex_lens", // convex_lens, concave_lens, plane_glass, concave_mirror, convex_mirror, plane_mirror
+            u: -240,               // Object distance (strictly negative by Cartesian convention)
+            h: 70,                 // Object height
+            f: 120,                // Focal length magnitude (always positive value in slider)
+            isInfinity: false,     // Collimated beam mode
+            tiltAngleDeg: 0        // Collimated ray tilt at infinity
+        };
+
+        // Pan & Zoom Viewport
+        const view = {
+            panX: 0,
+            panY: 0,
+            zoom: 1.0,
+            isDragging: false,
+            startX: 0,
+            startY: 0,
+            touchDist: null,
+            dragTarget: null
+        };
+
+        const uSlider = document.getElementById("u-slider");
+        const uBadge = document.getElementById("u-badge");
+        const fSlider = document.getElementById("f-slider");
+        const fBadge = document.getElementById("f-badge");
+        const focalRow = document.getElementById("focal-row");
+        const btnInf = document.getElementById("btn-inf");
+
+        const deviceDot = document.getElementById("device-dot");
+        const deviceBadge = document.getElementById("device-badge");
+        const deviceTitle = document.getElementById("device-title");
+
+        const hudU = document.getElementById("hud-u");
+        const hudV = document.getElementById("hud-v");
+        const hudF = document.getElementById("hud-f");
+        const hudM = document.getElementById("hud-m");
+        const hudNature = document.getElementById("hud-nature");
+
+        function toggleHud() {
+            const body = document.getElementById("hud-body");
+            const btn = document.getElementById("hud-toggle");
+            if (body.classList.contains("hidden")) {
+                body.classList.remove("hidden");
+                btn.innerHTML = "&minus;";
+            } else {
+                body.classList.add("hidden");
+                btn.innerHTML = "+";
+            }
+        }
+
+        function openModal() {
+            document.getElementById("device-modal").classList.remove("hidden");
+        }
+
+        function closeModal() {
+            document.getElementById("device-modal").classList.add("hidden");
+        }
+
+        function resetView() {
+            view.panX = 0;
+            view.panY = 0;
+            view.zoom = 1.0;
+        }
+
+        function resizeCanvas() {
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        window.addEventListener("resize", resizeCanvas);
+        resizeCanvas();
+
+        function selectDevice(type) {
+            state.device = type;
+            state.isInfinity = false;
+            updateDeviceUI();
+            closeModal();
+        }
+
+        function updateDeviceUI() {
+            const d = state.device;
+            const isPlane = d === "plane_glass" || d === "plane_mirror";
+            focalRow.style.display = isPlane ? "none" : "flex";
+
+            const titles = {
+                convex_lens: { name: "Convex Lens", title: "Converging Lens System", color: "bg-emerald-400", text: "text-emerald-400" },
+                concave_lens: { name: "Concave Lens", title: "Diverging Lens System", color: "bg-cyan-400", text: "text-cyan-400" },
+                plane_glass: { name: "Plane Glass Plate", title: "Parallel Slab Refraction", color: "bg-sky-400", text: "text-sky-400" },
+                concave_mirror: { name: "Concave Mirror", title: "Converging Mirror System", color: "bg-purple-400", text: "text-purple-400" },
+                convex_mirror: { name: "Convex Mirror", title: "Diverging Mirror System", color: "bg-pink-400", text: "text-pink-400" },
+                plane_mirror: { name: "Plane Mirror", title: "Specular Reflection System", color: "bg-amber-400", text: "text-amber-400" }
+            };
+
+            const info = titles[d];
+            deviceDot.className = `inline-block w-2 h-2 rounded-full ${info.color} animate-pulse`;
+            deviceBadge.className = `text-[10px] sm:text-xs font-bold uppercase tracking-wider ${info.text} mono`;
+            deviceBadge.textContent = info.name;
+            deviceTitle.textContent = info.title;
+
+            btnInf.className = state.isInfinity ?
+                "text-[9px] sm:text-[11px] px-2 py-0.5 sm:py-1 rounded bg-amber-500 text-black font-bold active:scale-95 transition" :
+                "text-[9px] sm:text-[11px] px-2 py-0.5 sm:py-1 rounded bg-amber-950/70 border border-amber-700/60 text-amber-300 font-bold active:scale-95 transition";
+        }
+
+        function setInfinity() {
+            state.isInfinity = !state.isInfinity;
+            updateDeviceUI();
+        }
+
+        function setPreset(preset) {
+            state.isInfinity = false;
+            const f = state.f;
+            if (preset === "beyond2f") state.u = -(2.5 * f);
+            else if (preset === "at2f") state.u = -(2.0 * f);
+            else if (preset === "between") state.u = -(1.5 * f);
+            else if (preset === "atf") state.u = -f;
+            else if (preset === "underf") state.u = -(0.55 * f);
+
+            uSlider.value = state.u;
+            uBadge.textContent = `${Math.round(state.u)}`;
+            updateDeviceUI();
+        }
+
+        uSlider.addEventListener("input", (e) => {
+            state.isInfinity = false;
+            state.u = parseFloat(e.target.value);
+            uBadge.textContent = `${Math.round(state.u)}`;
+            updateDeviceUI();
+        });
+
+        fSlider.addEventListener("input", (e) => {
+            state.f = parseFloat(e.target.value);
+            fBadge.textContent = `${Math.round(state.f)}px`;
+        });
+
+        // Pan & Zoom Listeners
+        canvas.addEventListener("wheel", (e) => {
+            e.preventDefault();
+            const factor = 1.1;
+            if (e.deltaY < 0) view.zoom = Math.min(view.zoom * factor, 3.0);
+            else view.zoom = Math.max(view.zoom / factor, 0.4);
+        }, { passive: false });
+
+        canvas.addEventListener("pointerdown", (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = (e.clientX - rect.left - (canvas.width / (2 * (window.devicePixelRatio || 1)) + view.panX)) / view.zoom;
+            const mouseY = (e.clientY - rect.top - (canvas.height / (2 * (window.devicePixelRatio || 1)) + view.panY)) / view.zoom;
+
+            // Check if clicking near object arrow tip (x = u, y = -h)
+            if (!state.isInfinity && Math.hypot(mouseX - state.u, mouseY - (-state.h)) < 30) {
+                view.dragTarget = "arrow_tip";
+            } else if (!state.isInfinity && Math.abs(mouseX - state.u) < 25 && mouseY <= 10 && mouseY >= -state.h - 10) {
+                view.dragTarget = "arrow_pos";
+            } else {
+                view.dragTarget = "canvas";
+                view.isDragging = true;
+                view.startX = e.clientX - view.panX;
+                view.startY = e.clientY - view.panY;
+            }
+        });
+
+        window.addEventListener("pointermove", (e) => {
+            if (view.dragTarget === "canvas" && view.isDragging) {
+                view.panX = e.clientX - view.startX;
+                view.panY = e.clientY - view.startY;
+            } else if (view.dragTarget === "arrow_tip") {
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = (e.clientX - rect.left - (canvas.width / (2 * (window.devicePixelRatio || 1)) + view.panX)) / view.zoom;
+                const mouseY = (e.clientY - rect.top - (canvas.height / (2 * (window.devicePixelRatio || 1)) + view.panY)) / view.zoom;
+                state.u = Math.min(-20, Math.max(-500, mouseX));
+                state.h = Math.min(180, Math.max(20, -mouseY));
+                uSlider.value = state.u;
+                uBadge.textContent = `${Math.round(state.u)}`;
+            } else if (view.dragTarget === "arrow_pos") {
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = (e.clientX - rect.left - (canvas.width / (2 * (window.devicePixelRatio || 1)) + view.panX)) / view.zoom;
+                state.u = Math.min(-20, Math.max(-500, mouseX));
+                uSlider.value = state.u;
+                uBadge.textContent = `${Math.round(state.u)}`;
+            }
+        });
+
+        window.addEventListener("pointerup", () => {
+            view.isDragging = false;
+            view.dragTarget = null;
+        });
+
+        // Analytical Ray Optics Solver
+        function solveOptics() {
+            const d = state.device;
+            const u = state.u;
+            const h = state.h;
+            const fMag = state.f;
+
+            let fSigned = 0;
+            let isLens = true;
+
+            if (d === "convex_lens") { fSigned = fMag; isLens = true; }
+            else if (d === "concave_lens") { fSigned = -fMag; isLens = true; }
+            else if (d === "plane_glass") { fSigned = Infinity; isLens = true; }
+            else if (d === "concave_mirror") { fSigned = -fMag; isLens = false; }
+            else if (d === "convex_mirror") { fSigned = fMag; isLens = false; }
+            else if (d === "plane_mirror") { fSigned = Infinity; isLens = false; }
+
+            // Infinite Object Handling
+            if (state.isInfinity) {
+                if (isLens) {
+                    const vInf = fSigned;
+                    return {
+                        u: -Infinity, v: vInf, m: 0, hImg: 0,
+                        isReal: fSigned > 0, isVirtual: fSigned < 0,
+                        isInfinity: true, fSigned, isLens
+                    };
+                } else {
+                    const vInf = fSigned; // Mirror focal plane
+                    return {
+                        u: -Infinity, v: vInf, m: 0, hImg: 0,
+                        isReal: fSigned < 0, isVirtual: fSigned > 0,
+                        isInfinity: true, fSigned, isLens
+                    };
+                }
+            }
+
+            let v = 0;
+            let m = 1;
+
+            if (isLens) {
+                if (d === "plane_glass") {
+                    v = u;
+                    m = 1.0;
+                } else {
+                    // Lens Formula: 1/f = 1/v - 1/u => 1/v = 1/f + 1/u
+                    const invV = (1 / fSigned) + (1 / u);
+                    v = Math.abs(invV) < 0.00001 ? (u < 0 ? Infinity : -Infinity) : 1 / invV;
+                    m = v / u;
+                }
+            } else {
+                if (d === "plane_mirror") {
+                    v = -u; // Image is behind mirror
+                    m = 1.0;
+                } else {
+                    // Mirror Formula: 1/f = 1/v + 1/u => 1/v = 1/f - 1/u
+                    const invV = (1 / fSigned) - (1 / u);
+                    v = Math.abs(invV) < 0.00001 ? Infinity : 1 / invV;
+                    m = -(v / u);
+                }
+            }
+
+            const hImg = h * m;
+            const isReal = isLens ? (v > 0 && Math.abs(v) < 5000) : (v < 0 && Math.abs(v) < 5000);
+            const isVirtual = isLens ? (v < 0) : (v > 0);
+
+            return { u, v, m, hImg, isReal, isVirtual, isInfinity: false, fSigned, isLens };
+        }
+
+        function drawRay(from, to, color, width = 2, isDashed = false) {
+            ctx.save();
+            if (isDashed) ctx.setLineDash([5, 4]);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.moveTo(from.x, from.y);
+            ctx.lineTo(to.x, to.y);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawArrowHead(from, to, color) {
+            const angle = Math.atan2(to.y - from.y, to.x - from.x);
+            const midX = (from.x + to.x) / 2;
+            const midY = (from.y + to.y) / 2;
+            ctx.save();
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(midX, midY);
+            ctx.lineTo(midX - 8 * Math.cos(angle - Math.PI / 6), midY - 8 * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(midX - 8 * Math.cos(angle + Math.PI / 6), midY - 8 * Math.sin(angle + Math.PI / 6));
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function render() {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            ctx.clearRect(0, 0, w, h);
+
+            const opt = solveOptics();
+
+            // Update Telemetry HUD
+            hudU.textContent = opt.isInfinity ? "-∞" : `${Math.round(opt.u)} px`;
+            hudV.textContent = Math.abs(opt.v) > 4000 ? "±∞ (At Focus)" : `${Math.round(opt.v)} px`;
+            hudF.textContent = Math.abs(opt.fSigned) > 4000 ? "∞ (Plane)" : `${Math.round(opt.fSigned)} px`;
+            hudM.textContent = opt.isInfinity ? "0.00x (Point)" : (Math.abs(opt.m) > 50 ? "±∞" : `${opt.m.toFixed(2)}x`);
+
+            if (opt.isInfinity) {
+                hudNature.textContent = opt.fSigned > 0 ? "Point Image at Focus (F)" : "Virtual Focus Point";
+                hudNature.className = "text-amber-400 text-[9px] sm:text-[10px]";
+            } else if (Math.abs(opt.v) > 4000) {
+                hudNature.textContent = "Image at Infinity (Parallel Rays)";
+                hudNature.className = "text-amber-400 text-[9px] sm:text-[10px]";
+            } else if (opt.isReal) {
+                hudNature.textContent = `Real & Inverted (${Math.abs(opt.m) > 1 ? "Magnified" : "Diminished"})`;
+                hudNature.className = "text-emerald-400 text-[9px] sm:text-[10px]";
+            } else {
+                hudNature.textContent = `Virtual & Erect (${Math.abs(opt.m) > 1 ? "Magnified" : "Diminished"})`;
+                hudNature.className = "text-cyan-400 text-[9px] sm:text-[10px]";
+            }
+
+            // World transform
+            ctx.save();
+            const origin = {
+                x: w * 0.5 + view.panX,
+                y: h * 0.44 + view.panY
+            };
+            ctx.translate(origin.x, origin.y);
+            ctx.scale(view.zoom, view.zoom);
+
+            // 1. Principal Optical Axis
+            ctx.save();
+            ctx.strokeStyle = "rgba(75, 85, 99, 0.5)";
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(-1200, 0);
+            ctx.lineTo(1200, 0);
+            ctx.stroke();
+            ctx.restore();
+
+            // 2. Focal and 2F Markers
+            const fMag = state.f;
+            const isPlane = state.device.includes("plane");
+
+            if (!isPlane) {
+                const pts = [
+                    { x: -fMag, label: "F₁" },
+                    { x: -2 * fMag, label: "2F₁" },
+                    { x: fMag, label: "F₂" },
+                    { x: 2 * fMag, label: "2F₂" }
+                ];
+
+                ctx.font = "bold 10px 'JetBrains Mono', monospace";
+                ctx.textAlign = "center";
+                pts.forEach(p => {
+                    ctx.strokeStyle = "rgba(168, 85, 247, 0.5)";
+                    ctx.beginPath();
+                    ctx.moveTo(p.x, -6);
+                    ctx.lineTo(p.x, 6);
+                    ctx.stroke();
+                    ctx.fillStyle = "rgba(192, 132, 252, 0.7)";
+                    ctx.fillText(p.label, p.x, 18);
+                });
+            }
+
+            // 3. Render Optical Device at x = 0
+            const devH = 260;
+            ctx.save();
+            if (state.device === "convex_lens") {
+                ctx.strokeStyle = "rgba(56, 189, 248, 0.85)";
+                ctx.fillStyle = "rgba(56, 189, 248, 0.12)";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 16, devH / 2, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            } else if (state.device === "concave_lens") {
+                ctx.strokeStyle = "rgba(56, 189, 248, 0.85)";
+                ctx.fillStyle = "rgba(56, 189, 248, 0.12)";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(-12, -devH / 2);
+                ctx.quadraticCurveTo(0, 0, -12, devH / 2);
+                ctx.lineTo(12, devH / 2);
+                ctx.quadraticCurveTo(0, 0, 12, -devH / 2);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            } else if (state.device === "plane_glass") {
+                ctx.strokeStyle = "rgba(56, 189, 248, 0.8)";
+                ctx.fillStyle = "rgba(56, 189, 248, 0.1)";
+                ctx.lineWidth = 2;
+                ctx.strokeRect(-12, -devH / 2, 24, devH);
+                ctx.fillRect(-12, -devH / 2, 24, devH);
+            } else if (state.device === "concave_mirror") {
+                ctx.strokeStyle = "rgba(168, 85, 247, 0.9)";
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(fMag * 2, 0, fMag * 2, Math.PI - 0.5, Math.PI + 0.5);
+                ctx.stroke();
+                // Hatching on non-reflecting rear surface
+                ctx.strokeStyle = "rgba(107, 114, 128, 0.5)";
+                ctx.lineWidth = 1;
+                for (let y = -devH / 2; y <= devH / 2; y += 12) {
+                    ctx.beginPath();
+                    ctx.moveTo(4, y);
+                    ctx.lineTo(12, y - 6);
+                    ctx.stroke();
+                }
+            } else if (state.device === "convex_mirror") {
+                ctx.strokeStyle = "rgba(236, 72, 153, 0.9)";
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(-fMag * 2, 0, fMag * 2, -0.5, 0.5);
+                ctx.stroke();
+                ctx.strokeStyle = "rgba(107, 114, 128, 0.5)";
+                ctx.lineWidth = 1;
+                for (let y = -devH / 2; y <= devH / 2; y += 12) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(8, y - 6);
+                    ctx.stroke();
+                }
+            } else if (state.device === "plane_mirror") {
+                ctx.strokeStyle = "rgba(251, 191, 36, 0.9)";
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(0, -devH / 2);
+                ctx.lineTo(0, devH / 2);
+                ctx.stroke();
+                ctx.strokeStyle = "rgba(107, 114, 128, 0.5)";
+                ctx.lineWidth = 1;
+                for (let y = -devH / 2; y <= devH / 2; y += 12) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(8, y - 6);
+                    ctx.stroke();
+                }
+            }
+            ctx.restore();
+
+            // 4. Ray Tracing Logic
+            const rayMax = 650;
+
+            if (state.isInfinity) {
+                // Beam from infinity: incoming parallel rays
+                const rayYOffsets = [-70, -35, 0, 35, 70];
+                rayYOffsets.forEach(ry => {
+                    const fromPt = { x: -800, y: ry };
+                    const atDevice = { x: 0, y: ry };
+                    drawRay(fromPt, atDevice, "#34d399", 2);
+                    drawArrowHead(fromPt, atDevice, "#34d399");
+
+                    if (opt.isLens) {
+                        if (state.device === "convex_lens") {
+                            const toPt = { x: fMag * 2.5, y: -((fMag * 2.5 - fMag) / fMag) * ry };
+                            drawRay(atDevice, { x: fMag, y: 0 }, "#38bdf8", 2);
+                            drawRay({ x: fMag, y: 0 }, toPt, "#38bdf8", 1.5);
+                        } else if (state.device === "concave_lens") {
+                            // Diverges from -f
+                            const slope = ry / fMag;
+                            const toPt = { x: 500, y: ry + slope * 500 };
+                            drawRay(atDevice, toPt, "#38bdf8", 2);
+                            drawRay(atDevice, { x: -fMag, y: 0 }, "rgba(56, 189, 248, 0.4)", 1.5, true);
+                        } else {
+                            // Plane glass
+                            drawRay(atDevice, { x: 500, y: ry }, "#38bdf8", 2);
+                        }
+                    } else {
+                        // Mirrors
+                        if (state.device === "concave_mirror") {
+                            // Reflects through -f
+                            const toPt = { x: -500, y: -(( -500 - (-fMag) ) / (-fMag)) * ry };
+                            drawRay(atDevice, { x: -fMag, y: 0 }, "#c084fc", 2);
+                            drawRay({ x: -fMag, y: 0 }, toPt, "#c084fc", 1.5);
+                        } else if (state.device === "convex_mirror") {
+                            // Reflects away from +f
+                            const slope = -ry / fMag;
+                            const toPt = { x: -500, y: ry + slope * (-500) };
+                            drawRay(atDevice, toPt, "#f472b6", 2);
+                            drawRay(atDevice, { x: fMag, y: 0 }, "rgba(244, 114, 182, 0.4)", 1.5, true);
+                        } else {
+                            // Plane mirror reflects horizontally back
+                            drawRay(atDevice, { x: -500, y: ry }, "#fbbf24", 2);
+                        }
+                    }
+                });
+
+                // Focal Point Image Indicator
+                if (Math.abs(opt.fSigned) < 4000) {
+                    const focusX = opt.isLens ? (state.device === "convex_lens" ? fMag : -fMag) : (state.device === "concave_mirror" ? -fMag : fMag);
+                    ctx.save();
+                    ctx.fillStyle = "#38bdf8";
+                    ctx.shadowColor = "#38bdf8";
+                    ctx.shadowBlur = 10;
+                    ctx.beginPath();
+                    ctx.arc(focusX, 0, 5, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.font = "bold 11px 'JetBrains Mono', monospace";
+                    ctx.fillStyle = "#38bdf8";
+                    ctx.textAlign = "center";
+                    ctx.fillText("Image Point (F)", focusX, -12);
+                    ctx.restore();
+                }
+
+            } else {
+                // Finite Object Arrow (x = u, y = 0 to -h)
+                const objX = state.u;
+                const objH = state.h;
+                const tip = { x: objX, y: -objH };
+
+                // Draw Object Arrow (Green)
+                ctx.save();
+                ctx.strokeStyle = "#10b981";
+                ctx.lineWidth = 3.5;
+                ctx.shadowColor = "#10b981";
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+                ctx.moveTo(objX, 0);
+                ctx.lineTo(tip.x, tip.y);
+                ctx.stroke();
+
+                // Arrow head
+                ctx.fillStyle = "#10b981";
+                ctx.beginPath();
+                ctx.moveTo(tip.x, tip.y);
+                ctx.lineTo(tip.x - 7, tip.y + 12);
+                ctx.lineTo(tip.x + 7, tip.y + 12);
+                ctx.closePath();
+                ctx.fill();
+
+                // Object Label
+                ctx.font = "bold 11px 'JetBrains Mono', monospace";
+                ctx.fillStyle = "#34d399";
+                ctx.textAlign = "center";
+                ctx.fillText("Object", objX, tip.y - 8);
+                ctx.restore();
+
+                // Tracing Canonical Rays
+                if (opt.isLens) {
+                    // Ray 1: Parallel to axis -> refracted through focus F2
+                    const r1_dev = { x: 0, y: tip.y };
+                    drawRay(tip, r1_dev, "#38bdf8", 1.8);
+                    drawArrowHead(tip, r1_dev, "#38bdf8");
+
+                    if (state.device === "convex_lens") {
+                        const slope1 = (0 - r1_dev.y) / (fMag - 0);
+                        const r1_end = { x: rayMax, y: r1_dev.y + slope1 * rayMax };
+                        drawRay(r1_dev, r1_end, "#38bdf8", 1.8);
+
+                        if (opt.isVirtual) {
+                            drawRay(r1_dev, { x: opt.v, y: -opt.hImg }, "rgba(56, 189, 248, 0.45)", 1.5, true);
+                        }
+                    } else if (state.device === "concave_lens") {
+                        const slope1 = (r1_dev.y - 0) / (0 - (-fMag));
+                        const r1_end = { x: rayMax, y: r1_dev.y + slope1 * rayMax };
+                        drawRay(r1_dev, r1_end, "#38bdf8", 1.8);
+                        drawRay(r1_dev, { x: -fMag, y: 0 }, "rgba(56, 189, 248, 0.45)", 1.5, true);
+                    } else {
+                        // Plane plate
+                        drawRay(r1_dev, { x: rayMax, y: r1_dev.y }, "#38bdf8", 1.8);
+                    }
+
+                    // Ray 2: Through Optical Center (0, 0)
+                    const slope2 = (0 - tip.y) / (0 - tip.x);
+                    const r2_end = { x: rayMax, y: slope2 * rayMax };
+                    drawRay(tip, { x: 0, y: 0 }, "#f43f5e", 1.8);
+                    drawArrowHead(tip, { x: 0, y: 0 }, "#f43f5e");
+                    drawRay({ x: 0, y: 0 }, r2_end, "#f43f5e", 1.8);
+                    if (opt.isVirtual) {
+                        drawRay({ x: 0, y: 0 }, { x: opt.v, y: -opt.hImg }, "rgba(244, 63, 94, 0.45)", 1.5, true);
+                    }
+
+                } else {
+                    // Mirrors
+                    // Ray 1: Parallel to axis -> reflects through Focus
+                    const r1_dev = { x: 0, y: tip.y };
+                    drawRay(tip, r1_dev, "#c084fc", 1.8);
+                    drawArrowHead(tip, r1_dev, "#c084fc");
+
+                    if (state.device === "concave_mirror") {
+                        const slope1 = (0 - r1_dev.y) / (-fMag - 0);
+                        const r1_end = { x: -rayMax, y: r1_dev.y + slope1 * (-rayMax) };
+                        drawRay(r1_dev, r1_end, "#c084fc", 1.8);
+                        if (opt.isVirtual) {
+                            drawRay(r1_dev, { x: opt.v, y: -opt.hImg }, "rgba(192, 132, 252, 0.45)", 1.5, true);
+                        }
+                    } else if (state.device === "convex_mirror") {
+                        const slope1 = (0 - r1_dev.y) / (fMag - 0);
+                        const r1_end = { x: -rayMax, y: r1_dev.y - slope1 * (-rayMax) };
+                        drawRay(r1_dev, r1_end, "#c084fc", 1.8);
+                        drawRay(r1_dev, { x: fMag, y: 0 }, "rgba(192, 132, 252, 0.45)", 1.5, true);
+                    } else {
+                        // Plane mirror
+                        drawRay(r1_dev, { x: -rayMax, y: r1_dev.y }, "#c084fc", 1.8);
+                        drawRay(r1_dev, { x: -opt.u, y: tip.y }, "rgba(192, 132, 252, 0.45)", 1.5, true);
+                    }
+
+                    // Ray 2: Incident at Pole (0, 0)
+                    drawRay(tip, { x: 0, y: 0 }, "#f59e0b", 1.8);
+                    drawArrowHead(tip, { x: 0, y: 0 }, "#f59e0b");
+                    const r2_end = { x: -rayMax, y: -((-tip.y / -tip.x) * (-rayMax)) };
+                    drawRay({ x: 0, y: 0 }, r2_end, "#f59e0b", 1.8);
+                    if (opt.isVirtual) {
+                        drawRay({ x: 0, y: 0 }, { x: opt.v, y: -opt.hImg }, "rgba(245, 158, 11, 0.45)", 1.5, true);
+                    }
+                }
+
+                // Render Resulting Image Arrow
+                if (Math.abs(opt.v) < 3500 && Math.abs(opt.hImg) < 600) {
+                    const imgX = opt.v;
+                    const imgY = -opt.hImg;
+
+                    ctx.save();
+                    ctx.strokeStyle = opt.isReal ? "#38bdf8" : "rgba(34, 211, 238, 0.7)";
+                    if (opt.isVirtual) ctx.setLineDash([5, 4]);
+                    ctx.lineWidth = 3.5;
+                    ctx.shadowColor = "#38bdf8";
+                    ctx.shadowBlur = 10;
+                    ctx.beginPath();
+                    ctx.moveTo(imgX, 0);
+                    ctx.lineTo(imgX, imgY);
+                    ctx.stroke();
+
+                    // Arrowhead
+                    ctx.fillStyle = "#38bdf8";
+                    const dirArrow = imgY < 0 ? -1 : 1;
+                    ctx.beginPath();
+                    ctx.moveTo(imgX, imgY);
+                    ctx.lineTo(imgX - 6, imgY - dirArrow * 10);
+                    ctx.lineTo(imgX + 6, imgY - dirArrow * 10);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Image Label
+                    ctx.font = "bold 11px 'JetBrains Mono', monospace";
+                    ctx.fillStyle = "#38bdf8";
+                    ctx.textAlign = "center";
+                    ctx.fillText(opt.isReal ? "Real Image" : "Virtual Image", imgX, imgY + (dirArrow > 0 ? 16 : -10));
+                    ctx.restore();
+                }
+            }
+
+            ctx.restore();
+            requestAnimationFrame(render);
+        }
+
+        updateDeviceUI();
+        requestAnimationFrame(render);
+    </script>
+</body>
+
+</html>
